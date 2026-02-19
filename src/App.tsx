@@ -1,5 +1,5 @@
 import { Hammer, Users, MapPin, Phone, Mail, Clock, Award, Shield, TrendingUp, Package, Wrench, ChevronRight, Star, Layers, Lock, Leaf, Send, FileText, ShoppingCart } from 'lucide-react';
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useMemo } from 'react';
 import { createClient } from '@supabase/supabase-js';
 
 function App() {
@@ -12,10 +12,17 @@ function App() {
   const [newsletterMessage, setNewsletterMessage] = useState('');
   const [quoteMessage, setQuoteMessage] = useState('');
 
-  const supabase = createClient(
-    import.meta.env.VITE_SUPABASE_URL,
-    import.meta.env.VITE_SUPABASE_ANON_KEY
-  );
+  const supabase = useMemo(() => {
+    const url = import.meta.env.VITE_SUPABASE_URL;
+    const key = import.meta.env.VITE_SUPABASE_ANON_KEY;
+
+    if (!url || !key) {
+      console.warn('Supabase credentials not configured');
+      return null;
+    }
+
+    return createClient(url, key);
+  }, []);
 
   useEffect(() => {
     const handleScroll = () => {
@@ -29,6 +36,12 @@ function App() {
     e.preventDefault();
     setNewsletterLoading(true);
     setNewsletterMessage('');
+
+    if (!supabase) {
+      setNewsletterMessage('Service temporarily unavailable.');
+      setNewsletterLoading(false);
+      return;
+    }
 
     try {
       const { error } = await supabase
@@ -111,14 +124,16 @@ function App() {
       const result = await response.json();
 
       if (response.ok && result.success) {
-        await supabase
-          .from('quote_requests')
-          .insert([{
-            name: quoteData.name,
-            email: quoteData.email,
-            phone: quoteData.phone,
-            project_details: quoteData.projectDetails
-          }]);
+        if (supabase) {
+          await supabase
+            .from('quote_requests')
+            .insert([{
+              name: quoteData.name,
+              email: quoteData.email,
+              phone: quoteData.phone,
+              project_details: quoteData.projectDetails
+            }]);
+        }
 
         setQuoteMessage('Thank you, your quote request has been sent. We\'ll contact you shortly.');
         setQuoteData({ name: '', email: '', phone: '', projectDetails: '', honeypot: '' });
