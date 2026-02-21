@@ -184,7 +184,7 @@ function App() {
   ];
 
   const stats = [
-    { number: '20+', label: 'Years Experience' },
+    { number: '16+', label: 'Years Experience' },
     { number: '5', label: 'Branch Locations' },
     { number: 'Convinience', label: 'Happy Customers' },
     { number: 'Support Available', label: 'Experienced staff' }
