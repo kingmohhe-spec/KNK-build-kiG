@@ -450,11 +450,11 @@ function App() {
                   <div className="space-y-3">
                     <div className="flex items-center text-gray-600 text-sm group-hover:text-gray-800 transition-colors">
                       <Clock className="h-4 w-4 mr-3 text-orange-500" />
-                      <span>Mon - Fri: 7:00 AM - 5:00 PM</span>
+                      <span>Mon - Fri: 7:30 AM - 5:00 PM</span>
                     </div>
                     <div className="flex items-center text-gray-600 text-sm group-hover:text-gray-800 transition-colors">
                       <Clock className="h-4 w-4 mr-3 text-orange-500" />
-                      <span>Sat: 7:00 AM - 1:00 PM</span>
+                      <span>Sat: 7:30 AM - 3:00 PM</span>
                     </div>
                   </div>
                 </div>
