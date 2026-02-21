@@ -230,7 +230,7 @@ function App() {
             <div className="inline-block mb-6">
               <div className="flex items-center space-x-2 bg-white/10 backdrop-blur-sm px-4 py-2 rounded-full">
                 <Award className="h-5 w-5 text-orange-400" />
-                <span className="text-sm font-semibold">Trusted Since 2011 • 17+ Years of Excellence</span>
+                <span className="text-sm font-semibold">Trusted Since 2011 • 16+ Years of Excellence</span>
               </div>
             </div>
 
