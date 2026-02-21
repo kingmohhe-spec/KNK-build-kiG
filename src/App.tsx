@@ -11,7 +11,6 @@ function App() {
   const [quoteLoading, setQuoteLoading] = useState(false);
   const [newsletterMessage, setNewsletterMessage] = useState('');
   const [quoteMessage, setQuoteMessage] = useState('');
-  const [branchHours, setBranchHours] = useState<Record<string, Array<{day_of_week: string, opening_time: string, closing_time: string}>>>({});
 
   const supabase = useMemo(() => {
     const url = import.meta.env.VITE_SUPABASE_URL;
@@ -32,37 +31,6 @@ function App() {
     window.addEventListener('scroll', handleScroll);
     return () => window.removeEventListener('scroll', handleScroll);
   }, []);
-
-  useEffect(() => {
-    const fetchBranchHours = async () => {
-      if (!supabase) return;
-
-      try {
-        const { data, error } = await supabase
-          .from('branch_hours')
-          .select('branch_name, day_of_week, opening_time, closing_time');
-
-        if (!error && data) {
-          const hoursMap: Record<string, Array<{day_of_week: string, opening_time: string, closing_time: string}>> = {};
-          data.forEach((row: any) => {
-            if (!hoursMap[row.branch_name]) {
-              hoursMap[row.branch_name] = [];
-            }
-            hoursMap[row.branch_name].push({
-              day_of_week: row.day_of_week,
-              opening_time: row.opening_time,
-              closing_time: row.closing_time
-            });
-          });
-          setBranchHours(hoursMap);
-        }
-      } catch (err) {
-        console.error('Error fetching branch hours:', err);
-      }
-    };
-
-    fetchBranchHours();
-  }, [supabase]);
 
   const handleNewsletterSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -216,7 +184,7 @@ function App() {
   ];
 
   const stats = [
-    { number: '16+', label: 'Years Experience' },
+    { number: '20+', label: 'Years Experience' },
     { number: '5', label: 'Branch Locations' },
     { number: 'Convinience', label: 'Happy Customers' },
     { number: 'Support Available', label: 'Experienced staff' }
@@ -262,7 +230,7 @@ function App() {
             <div className="inline-block mb-6">
               <div className="flex items-center space-x-2 bg-white/10 backdrop-blur-sm px-4 py-2 rounded-full">
                 <Award className="h-5 w-5 text-orange-400" />
-                <span className="text-sm font-semibold">Trusted Since 2011 • 16+ Years of Excellence</span>
+                <span className="text-sm font-semibold">Trusted Since 2004 • 20 Years of Excellence</span>
               </div>
             </div>
 
@@ -318,7 +286,7 @@ function App() {
                 Two Decades of Building Excellence
               </h2>
               <p className="text-xl text-gray-600 max-w-3xl mx-auto">
-                Since 2016, KNK Builders has been Mpumalanga's premier supplier of quality hardware materials and building supplies
+                Since 2004, KNK Builders has been Mpumalanga's premier supplier of quality hardware materials and building supplies
               </p>
             </div>
 
@@ -467,12 +435,7 @@ function App() {
           </div>
 
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 max-w-6xl mx-auto">
-            {branches.map((branch, index) => {
-              const hours = branchHours[branch.name] || [];
-              const daysOrder = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday'];
-              const sortedHours = [...hours].sort((a, b) => daysOrder.indexOf(a.day_of_week) - daysOrder.indexOf(b.day_of_week));
-
-              return (
+            {branches.map((branch, index) => (
               <div
                 key={index}
                 className="group relative bg-gradient-to-br from-blue-50 via-white to-blue-50 rounded-2xl p-8 shadow-lg hover:shadow-2xl transition-all duration-500 border border-blue-100 hover:border-orange-300 transform hover:-translate-y-2 overflow-hidden"
@@ -484,31 +447,19 @@ function App() {
                   </div>
                   <h3 className="text-2xl font-bold text-gray-900 mb-2">{branch.name}</h3>
                   <p className="text-orange-600 font-semibold mb-6">{branch.region}</p>
-                  <div className="space-y-2">
-                    {sortedHours.length > 0 ? (
-                      sortedHours.map((hour, idx) => (
-                        <div key={idx} className="flex items-center text-gray-600 text-sm group-hover:text-gray-800 transition-colors">
-                          <Clock className="h-4 w-4 mr-3 text-orange-500 flex-shrink-0" />
-                          <span>{hour.day_of_week.slice(0, 3)}: {hour.opening_time} - {hour.closing_time}</span>
-                        </div>
-                      ))
-                    ) : (
-                      <>
-                        <div className="flex items-center text-gray-600 text-sm group-hover:text-gray-800 transition-colors">
-                          <Clock className="h-4 w-4 mr-3 text-orange-500" />
-                          <span>Mon - Fri: 7:30 AM - 5:00 PM</span>
-                        </div>
-                        <div className="flex items-center text-gray-600 text-sm group-hover:text-gray-800 transition-colors">
-                          <Clock className="h-4 w-4 mr-3 text-orange-500" />
-                          <span>Sat: 7:30 AM - 3:00 PM</span>
-                        </div>
-                      </>
-                    )}
+                  <div className="space-y-3">
+                    <div className="flex items-center text-gray-600 text-sm group-hover:text-gray-800 transition-colors">
+                      <Clock className="h-4 w-4 mr-3 text-orange-500" />
+                      <span>Mon - Fri: 7:00 AM - 5:00 PM</span>
+                    </div>
+                    <div className="flex items-center text-gray-600 text-sm group-hover:text-gray-800 transition-colors">
+                      <Clock className="h-4 w-4 mr-3 text-orange-500" />
+                      <span>Sat: 7:00 AM - 1:00 PM</span>
+                    </div>
                   </div>
                 </div>
               </div>
-              );
-            })}
+            ))}
             <div className="group relative bg-gradient-to-br from-orange-500 via-orange-550 to-orange-600 rounded-2xl p-8 shadow-lg hover:shadow-2xl transition-all duration-500 transform hover:-translate-y-2 text-white overflow-hidden">
               <div className="absolute top-0 right-0 w-32 h-32 bg-white/10 rounded-full -mr-16 -mt-16 group-hover:scale-150 transition-transform duration-500"></div>
               <div className="relative z-10">
