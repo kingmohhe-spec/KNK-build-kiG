@@ -230,7 +230,7 @@ function App() {
             <div className="inline-block mb-6">
               <div className="flex items-center space-x-2 bg-white/10 backdrop-blur-sm px-4 py-2 rounded-full">
                 <Award className="h-5 w-5 text-orange-400" />
-                <span className="text-sm font-semibold">Trusted Since 2004 • 20 Years of Excellence</span>
+                <span className="text-sm font-semibold">Trusted Since 2011 • 17+ Years of Excellence</span>
               </div>
             </div>
 
@@ -286,7 +286,7 @@ function App() {
                 Two Decades of Building Excellence
               </h2>
               <p className="text-xl text-gray-600 max-w-3xl mx-auto">
-                Since 2004, KNK Builders has been Mpumalanga's premier supplier of quality hardware materials and building supplies
+                Since 2016, KNK Builders has been Mpumalanga's premier supplier of quality hardware materials and building supplies
               </p>
             </div>
 
