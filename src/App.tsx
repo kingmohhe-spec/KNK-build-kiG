@@ -384,6 +384,24 @@ function App() {
                   </div>
                 );
               })}
+
+              <div className="bg-white rounded-2xl overflow-hidden shadow-md hover:shadow-2xl transition-all duration-500 group border border-gray-100 hover:border-orange-200 transform hover:-translate-y-1">
+                <div className="h-40 overflow-hidden bg-gray-200 relative">
+                  <img
+                    src="/final_credit_pic.png"
+                    alt="Apply for Credit Today"
+                    className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-500"
+                  />
+                  <div className="absolute inset-0 bg-gradient-to-t from-black/40 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300"></div>
+                </div>
+                <div className="p-6">
+                  <div className="bg-gradient-to-br from-blue-500 to-blue-600 w-12 h-12 rounded-lg flex items-center justify-center mb-4 group-hover:scale-110 transition-transform shadow-lg">
+                    <FileText className="h-6 w-6 text-white" />
+                  </div>
+                  <h4 className="font-bold text-gray-900 mb-2 text-lg">Apply for Credit Today!</h4>
+                  <p className="text-gray-600 text-sm">Flexible financing options available</p>
+                </div>
+              </div>
             </div>
           </div>
 
