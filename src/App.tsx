@@ -523,7 +523,7 @@ function App() {
               {
                 name: 'Sarah van der Merwe',
                 role: 'Business Owner',
-                text: 'Great prices with bulk purchasing. Professional service.',
+                text: 'Great prices with bulk purchases. Professional service.',
                 rating: 5
               },
               {
