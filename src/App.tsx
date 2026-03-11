@@ -6,6 +6,7 @@ function App() {
   const [scrolled, setScrolled] = useState(false);
   const [cartCount, setCartCount] = useState(0);
   const [newsletterEmail, setNewsletterEmail] = useState('');
+  const [selectedBranch, setSelectedBranch] = useState('');
   const [quoteData, setQuoteData] = useState({ name: '', email: '', phone: '', projectDetails: '', honeypot: '' });
   const [newsletterLoading, setNewsletterLoading] = useState(false);
   const [quoteLoading, setQuoteLoading] = useState(false);
@@ -46,7 +47,7 @@ function App() {
     try {
       const { error } = await supabase
         .from('newsletter_subscribers')
-        .insert([{ email: newsletterEmail }]);
+        .insert([{ email: newsletterEmail, preferred_branch: selectedBranch || null }]);
 
       if (error) {
         if (error.code === '23505') {
@@ -57,6 +58,7 @@ function App() {
       } else {
         setNewsletterMessage('Thank you for subscribing!');
         setNewsletterEmail('');
+        setSelectedBranch('');
       }
     } catch {
       setNewsletterMessage('Error subscribing. Please try again.');
@@ -705,6 +707,18 @@ function App() {
                 className="flex-1 px-6 py-4 rounded-lg text-gray-900 placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-orange-300"
                 required
               />
+              <select
+                value={selectedBranch}
+                onChange={(e) => setSelectedBranch(e.target.value)}
+                className="px-6 py-4 rounded-lg text-gray-900 focus:outline-none focus:ring-2 focus:ring-orange-300 bg-white"
+              >
+                <option value="">Select a branch</option>
+                <option value="Dwarsloop">Dwarsloop</option>
+                <option value="Kwamhlanga">Kwamhlanga</option>
+                <option value="Elukwatini">Elukwatini</option>
+                <option value="Numbi">Numbi</option>
+                <option value="Dayizenza">Dayizenza</option>
+              </select>
               <button
                 type="submit"
                 disabled={newsletterLoading}
