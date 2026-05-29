@@ -562,40 +562,33 @@ function App() {
         <div className="absolute bottom-0 right-20 w-96 h-96 bg-orange-200/20 rounded-full mix-blend-multiply blur-3xl opacity-15"></div>
         <div className="container mx-auto px-6 relative z-10">
           <div className="max-w-5xl mx-auto">
-            <div className="text-center mb-16">
+            <div className="text-center mb-12">
               <div className="inline-block mb-4">
                 <span className="bg-blue-100 text-blue-600 px-4 py-2 rounded-full text-sm font-semibold">Get In Touch</span>
               </div>
               <h2 className="text-4xl md:text-5xl font-bold text-gray-900 mb-6">
                 Ready to Start Your Project?
               </h2>
-              <p className="text-xl text-gray-600">
+              <p className="text-xl text-gray-600 mb-8">
                 Contact us today for expert advice and competitive pricing
               </p>
+
+              <div className="flex justify-center">
+                <img src="/call_whatsapp_cube_icon.svg" alt="Call or WhatsApp" className="w-48 h-40 hover:scale-110 transition-transform duration-300" />
+              </div>
             </div>
 
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-12">
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-12">
               {[
                 {
-                  icon: Phone,
                   title: 'Call Us',
                   info: '+27 64 539 1832',
-                  subinfo: 'Mon - Fri, 8AM - 5PM',
-                  color: 'from-blue-500 to-blue-600'
+                  subinfo: 'Mon - Fri, 8AM - 5PM'
                 },
                 {
-                  icon: Mail,
                   title: 'Email Us',
                   info: 'knkbuildersmarketing@gmail.com',
-                  subinfo: 'We reply within 24 hours',
-                  color: 'from-orange-500 to-orange-600'
-                },
-                {
-                  icon: MapPin,
-                  title: 'Visit Us',
-                  info: '5 Locations',
-                  subinfo: 'Across Mpumalanga',
-                  color: 'from-green-500 to-green-600'
+                  subinfo: 'We reply within 24 hours'
                 }
               ].map((contact, index) => (
                 <div
@@ -604,9 +597,6 @@ function App() {
                 >
                   <div className="absolute top-0 right-0 w-24 h-24 bg-orange-500/10 rounded-full -mr-12 -mt-12 group-hover:scale-150 transition-transform duration-500"></div>
                   <div className="relative z-10">
-                    <div className={`inline-block p-4 rounded-xl bg-gradient-to-br ${contact.color} mb-6 group-hover:scale-110 transition-transform shadow-lg`}>
-                      <contact.icon className="h-7 w-7 text-white" />
-                    </div>
                     <h3 className="text-xl font-bold text-gray-900 mb-3">{contact.title}</h3>
                     <p className="text-lg text-gray-700 font-semibold mb-2">{contact.info}</p>
                     <p className="text-sm text-gray-500 group-hover:text-gray-700 transition-colors">{contact.subinfo}</p>
