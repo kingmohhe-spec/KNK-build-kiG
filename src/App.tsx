@@ -581,7 +581,7 @@ function App() {
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-12">
               {[
                 {
-                  title: 'Call Us',
+                  title: 'Contact Us',
                   info: '+27 64 539 1832',
                   subinfo: 'Mon - Fri, 8AM - 5PM'
                 },
