@@ -158,7 +158,7 @@ function App() {
     { name: 'Elukwatini', region: 'Mpumalanga' },
     { name: 'Kwamhlanga', region: 'Mpumalanga' },
     { name: 'Numbi', region: 'Mpumalanga' },
-    { name: 'White River', region: 'Mpumalanga' }
+    { name: 'White River', region: 'Mpumalanga', isHeadOffice: true }
   ];
 
 
@@ -456,7 +456,7 @@ function App() {
               Conveniently Located Across Mpumalanga
             </h2>
             <p className="text-xl text-gray-600 max-w-3xl mx-auto">
-              Visit any of our 5 branches for expert advice and quality building materials
+              Visit any of our 6 branches for expert advice and quality building materials
             </p>
           </div>
 
@@ -471,7 +471,12 @@ function App() {
                   <div className="bg-gradient-to-br from-blue-600 to-blue-700 w-14 h-14 rounded-xl flex items-center justify-center mb-6 group-hover:scale-110 transition-transform shadow-lg">
                     <MapPin className="h-7 w-7 text-white" />
                   </div>
-                  <h3 className="text-2xl font-bold text-gray-900 mb-2">{branch.name}</h3>
+                  <div className="flex items-center gap-3 mb-2">
+                    <h3 className="text-2xl font-bold text-gray-900">{branch.name}</h3>
+                    {branch.isHeadOffice && (
+                      <span className="bg-gradient-to-r from-orange-500 to-orange-600 text-white text-xs font-bold px-3 py-1 rounded-full uppercase tracking-wide">Head Office</span>
+                    )}
+                  </div>
                   <p className="text-orange-600 font-semibold mb-6">{branch.region}</p>
                   <div className="space-y-3">
                     <div className="flex items-center text-gray-600 text-sm group-hover:text-gray-800 transition-colors">
@@ -714,6 +719,7 @@ function App() {
                 <option value="Elukwatini">Elukwatini</option>
                 <option value="Numbi">Numbi</option>
                 <option value="Dayizenza">Dayizenza</option>
+                <option value="White River">White River</option>
               </select>
               <button
                 type="submit"
@@ -764,7 +770,7 @@ function App() {
                 {branches.map((branch, index) => (
                   <li key={index} className="flex items-center space-x-2 hover:text-orange-400 transition-colors duration-300 cursor-pointer">
                     <MapPin className="h-4 w-4 text-orange-500 flex-shrink-0" />
-                    <span>{branch.name}</span>
+                    <span>{branch.name}{branch.isHeadOffice && <span className="text-orange-400 text-xs font-semibold ml-1">(Head Office)</span>}</span>
                   </li>
                 ))}
               </ul>
