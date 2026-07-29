@@ -1,6 +1,7 @@
 import { Hammer, Users, MapPin, Phone, Mail, Clock, Award, Shield, TrendingUp, Package, Wrench, ChevronRight, Star, Layers, Lock, Leaf, Send, FileText, ShoppingCart } from 'lucide-react';
 import { useState, useEffect, useMemo } from 'react';
 import { createClient } from '@supabase/supabase-js';
+import CreditApplicationForm from './components/CreditApplicationForm';
 
 function App() {
   const [scrolled, setScrolled] = useState(false);
@@ -12,6 +13,7 @@ function App() {
   const [quoteLoading, setQuoteLoading] = useState(false);
   const [newsletterMessage, setNewsletterMessage] = useState('');
   const [quoteMessage, setQuoteMessage] = useState('');
+  const [creditFormOpen, setCreditFormOpen] = useState(false);
 
   const supabase = useMemo(() => {
     const url = import.meta.env.VITE_SUPABASE_URL;
@@ -155,7 +157,8 @@ function App() {
     { name: 'Dayizenza', region: 'Mpumalanga' },
     { name: 'Elukwatini', region: 'Mpumalanga' },
     { name: 'Kwamhlanga', region: 'Mpumalanga' },
-    { name: 'Numbi', region: 'Mpumalanga' }
+    { name: 'Numbi', region: 'Mpumalanga' },
+    { name: 'White River', region: 'Mpumalanga' }
   ];
 
 
@@ -387,7 +390,10 @@ function App() {
                 );
               })}
 
-              <div className="bg-white rounded-2xl overflow-hidden shadow-md hover:shadow-2xl transition-all duration-500 group border border-gray-100 hover:border-orange-200 transform hover:-translate-y-1">
+              <button
+                onClick={() => setCreditFormOpen(true)}
+                className="text-left bg-white rounded-2xl overflow-hidden shadow-md hover:shadow-2xl transition-all duration-500 group border border-gray-100 hover:border-orange-200 transform hover:-translate-y-1 w-full"
+              >
                 <div className="h-40 overflow-hidden bg-gray-200 relative">
                   <img
                     src="/final_credit_pic.png"
@@ -403,7 +409,7 @@ function App() {
                   <h4 className="font-bold text-gray-900 mb-2 text-lg">Apply for Credit Today!</h4>
                   <p className="text-gray-600 text-sm">Flexible financing options available</p>
                 </div>
-              </div>
+              </button>
             </div>
           </div>
 
@@ -770,6 +776,8 @@ function App() {
           </div>
         </div>
       </footer>
+
+      <CreditApplicationForm isOpen={creditFormOpen} onClose={() => setCreditFormOpen(false)} />
     </div>
   );
 }
