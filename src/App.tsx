@@ -8,7 +8,7 @@ function App() {
   const [cartCount, setCartCount] = useState(0);
   const [newsletterEmail, setNewsletterEmail] = useState('');
   const [selectedBranch, setSelectedBranch] = useState('');
-  const [quoteData, setQuoteData] = useState({ name: '', email: '', phone: '', projectDetails: '', honeypot: '' });
+  const [quoteData, setQuoteData] = useState({ name: '', email: '', phone: '', branch: '', projectDetails: '', budget: '', honeypot: '' });
   const [newsletterLoading, setNewsletterLoading] = useState(false);
   const [quoteLoading, setQuoteLoading] = useState(false);
   const [newsletterMessage, setNewsletterMessage] = useState('');
@@ -84,6 +84,10 @@ function App() {
       return 'Please enter a valid phone number';
     }
 
+    if (!quoteData.branch.trim()) {
+      return 'Please select the nearest branch';
+    }
+
     if (!quoteData.projectDetails.trim() || quoteData.projectDetails.trim().length < 10) {
       return 'Project details must be at least 10 characters/words';
     }
@@ -108,42 +112,37 @@ function App() {
     }
 
     try {
-      const apiUrl = `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/send-quote-email`;
+      const scriptUrl = 'https://script.google.com/macros/s/AKfycbx3YSLd7kHYk7hjKJdmM3gtzQCQLjk0KmabklsRlyVGTwEl4SbU0lXxbhD_fsECwQ0z/exec';
 
-      const response = await fetch(apiUrl, {
+      await fetch(scriptUrl, {
         method: 'POST',
-        headers: {
-          'Authorization': `Bearer ${import.meta.env.VITE_SUPABASE_ANON_KEY}`,
-          'Content-Type': 'application/json',
-        },
+        mode: 'no-cors',
+        headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
-          name: quoteData.name,
-          email: quoteData.email,
+          fullName: quoteData.name,
           phone: quoteData.phone,
-          projectDetails: quoteData.projectDetails,
-          honeypot: quoteData.honeypot
+          email: quoteData.email,
+          branch: quoteData.branch,
+          projectDescription: quoteData.projectDetails,
+          budget: quoteData.budget
         })
       });
 
-      const result = await response.json();
-
-      if (response.ok && result.success) {
-        if (supabase) {
-          await supabase
-            .from('quote_requests')
-            .insert([{
-              name: quoteData.name,
-              email: quoteData.email,
-              phone: quoteData.phone,
-              project_details: quoteData.projectDetails
-            }]);
-        }
-
-        setQuoteMessage('Thank you, your quote request has been sent. We\'ll contact you shortly.');
-        setQuoteData({ name: '', email: '', phone: '', projectDetails: '', honeypot: '' });
-      } else {
-        setQuoteMessage(result.message || 'Error submitting quote request. Please try again.');
+      if (supabase) {
+        await supabase
+          .from('quote_requests')
+          .insert([{
+            name: quoteData.name,
+            email: quoteData.email,
+            phone: quoteData.phone,
+            branch: quoteData.branch,
+            project_details: quoteData.projectDetails,
+            budget: quoteData.budget || null
+          }]);
       }
+
+      setQuoteMessage('Thank you, your quote request has been sent. We\'ll contact you shortly.');
+      setQuoteData({ name: '', email: '', phone: '', branch: '', projectDetails: '', budget: '', honeypot: '' });
     } catch (error) {
       console.error('Quote submission error:', error);
       setQuoteMessage('Error submitting quote request. Please try again.');
@@ -651,21 +650,41 @@ function App() {
                     required
                   />
                 </div>
-                <input
-                  type="tel"
-                  placeholder="Phone Number"
-                  value={quoteData.phone}
-                  onChange={(e) => setQuoteData({ ...quoteData, phone: e.target.value })}
-                  className="w-full bg-white/10 border border-white/30 rounded-lg px-4 py-3 text-white placeholder-white/60 focus:outline-none focus:border-white/60 focus:bg-white/20 transition-all"
-                  required
-                />
+                <div className="grid md:grid-cols-2 gap-4">
+                  <input
+                    type="tel"
+                    placeholder="Phone Number"
+                    value={quoteData.phone}
+                    onChange={(e) => setQuoteData({ ...quoteData, phone: e.target.value })}
+                    className="bg-white/10 border border-white/30 rounded-lg px-4 py-3 text-white placeholder-white/60 focus:outline-none focus:border-white/60 focus:bg-white/20 transition-all"
+                    required
+                  />
+                  <select
+                    value={quoteData.branch}
+                    onChange={(e) => setQuoteData({ ...quoteData, branch: e.target.value })}
+                    className="bg-white/10 border border-white/30 rounded-lg px-4 py-3 text-white focus:outline-none focus:border-white/60 focus:bg-white/20 transition-all"
+                    required
+                  >
+                    <option value="" className="text-gray-900">Select nearest branch</option>
+                    {branches.map((b) => (
+                      <option key={b.name} value={b.name} className="text-gray-900">{b.name}{b.isHeadOffice ? ' (Head Office)' : ''}</option>
+                    ))}
+                  </select>
+                </div>
                 <textarea
-                  placeholder="Describe your qoute/project..."
+                  placeholder="Describe your quote/project..."
                   value={quoteData.projectDetails}
                   onChange={(e) => setQuoteData({ ...quoteData, projectDetails: e.target.value })}
                   rows={4}
                   className="w-full bg-white/10 border border-white/30 rounded-lg px-4 py-3 text-white placeholder-white/60 focus:outline-none focus:border-white/60 focus:bg-white/20 transition-all resize-none"
                   required
+                />
+                <input
+                  type="text"
+                  placeholder="Estimated Budget (optional)"
+                  value={quoteData.budget}
+                  onChange={(e) => setQuoteData({ ...quoteData, budget: e.target.value })}
+                  className="w-full bg-white/10 border border-white/30 rounded-lg px-4 py-3 text-white placeholder-white/60 focus:outline-none focus:border-white/60 focus:bg-white/20 transition-all"
                 />
                 <button
                   type="submit"
