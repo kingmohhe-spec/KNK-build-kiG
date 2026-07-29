@@ -714,7 +714,7 @@ function App() {
                 Stay Updated with Tips & Deals
               </h2>
               <p className="text-xl text-orange-100">
-                Subscribe to our newsletter for exclusive offers, building tips, and project inspiration
+                Subscribe to our newsletter for Specials/ Pamphlets, exclusive offers, building tips.
               </p>
             </div>
 
