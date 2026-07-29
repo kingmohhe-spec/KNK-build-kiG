@@ -455,7 +455,7 @@ function App() {
               Conveniently Located Across Mpumalanga
             </h2>
             <p className="text-xl text-gray-600 max-w-3xl mx-auto">
-              Visit any of our 6 branches for expert advice and quality building materials
+              Visit any of our 5 branches for expert advice and quality building materials
             </p>
           </div>
 
