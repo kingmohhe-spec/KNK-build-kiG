@@ -527,7 +527,7 @@ function App() {
               {
                 name: 'Thabo Maseko',
                 role: 'Construction Contractor',
-                text: 'Best supplier in Mpumalanga. Quality and service unmatched.',
+                text: 'Best Hardware in Mpumalanga. Quality and service unmatched.',
                 rating: 5
               },
               {
