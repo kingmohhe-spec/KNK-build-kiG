@@ -242,9 +242,9 @@ function App() {
             </div>
 
             <h1 className="text-5xl md:text-7xl font-bold mb-6 leading-tight">
-              Your Trusted Hardware
+              WHERE YOU SPEND LESS 
               <span className="block bg-gradient-to-r from-orange-400 to-orange-600 bg-clip-text text-transparent">
-                Building Partner
+                & SAVEMORE
               </span>
             </h1>
 
