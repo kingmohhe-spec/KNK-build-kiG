@@ -7,6 +7,7 @@ function App() {
   const [scrolled, setScrolled] = useState(false);
   const [cartCount, setCartCount] = useState(0);
   const [newsletterEmail, setNewsletterEmail] = useState('');
+  const [newsletterName, setNewsletterName] = useState('');
   const [selectedBranch, setSelectedBranch] = useState('');
   const [quoteData, setQuoteData] = useState({ name: '', email: '', phone: '', branch: '', projectDetails: '', budget: '', honeypot: '' });
   const [newsletterLoading, setNewsletterLoading] = useState(false);
@@ -40,28 +41,30 @@ function App() {
     setNewsletterLoading(true);
     setNewsletterMessage('');
 
-    if (!supabase) {
-      setNewsletterMessage('Service temporarily unavailable.');
-      setNewsletterLoading(false);
-      return;
-    }
-
     try {
-      const { error } = await supabase
-        .from('newsletter_subscribers')
-        .insert([{ email: newsletterEmail, preferred_branch: selectedBranch || null }]);
+      const scriptUrl = 'https://script.google.com/macros/s/AKfycbxjoOKCnwb9-t07byPjVbQSaDINAb5b3zZaoSLTwiFMDcuiuRyxcwhIlUsFKXCJqRGPtA/exec';
 
-      if (error) {
-        if (error.code === '23505') {
-          setNewsletterMessage('This email is already subscribed.');
-        } else {
-          setNewsletterMessage('Error subscribing. Please try again.');
-        }
-      } else {
-        setNewsletterMessage('Thank you for subscribing!');
-        setNewsletterEmail('');
-        setSelectedBranch('');
+      await fetch(scriptUrl, {
+        method: 'POST',
+        mode: 'no-cors',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          name: newsletterName,
+          email: newsletterEmail,
+          branch: selectedBranch || ''
+        })
+      });
+
+      if (supabase) {
+        await supabase
+          .from('newsletter_subscribers')
+          .insert([{ email: newsletterEmail, preferred_branch: selectedBranch || null }]);
       }
+
+      setNewsletterMessage('Thank you for subscribing!');
+      setNewsletterEmail('');
+      setNewsletterName('');
+      setSelectedBranch('');
     } catch {
       setNewsletterMessage('Error subscribing. Please try again.');
     } finally {
@@ -719,6 +722,13 @@ function App() {
             </div>
 
             <form onSubmit={handleNewsletterSubmit} className="flex flex-col sm:flex-row gap-3">
+              <input
+                type="text"
+                placeholder="Name (optional)"
+                value={newsletterName}
+                onChange={(e) => setNewsletterName(e.target.value)}
+                className="flex-1 px-6 py-4 rounded-lg text-gray-900 placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-orange-300"
+              />
               <input
                 type="email"
                 placeholder="Enter your email"
