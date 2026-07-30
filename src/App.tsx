@@ -293,7 +293,7 @@ function App() {
                 Reaching Two Decades of Building Excellence
               </h2>
               <p className="text-xl text-gray-600 max-w-3xl mx-auto">
-                For over 20 years, KNK Builders has been Mpumalanga's trusted partner for quality hardware and building materials. What started as a single store has grown into a network of branches serving contractors, businesses, and homeowners across the region — from Dayizenza and Dwarsloop to Elukwatini, Kwamhlanga, and Numbi.
+                For over 16 years, KNK Builders has been Mpumalanga's trusted partner for quality hardware and building materials. What started as a single store has grown into a network of branches serving contractors, businesses, and homeowners across the region — from Dayizenza and Dwarsloop to Elukwatini, Kwamhlanga, and Numbi.
 
 We believe in more than just supplying materials. Our team is built on years of hands-on knowledge, so whether you're a contractor sourcing for a big project or a homeowner tackling a weekend fix, you'll find the right products and the right advice, every time.
 
