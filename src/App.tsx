@@ -206,7 +206,7 @@ function App() {
               <img src="/images.jpg" alt="KNK Builders Logo" className="h-16 w-auto transition-all" />
             </div>
             <div className="hidden md:flex items-center space-x-8">
-              <a href="#about us" className={`transition-colors hover:text-blue-600 ${scrolled ? 'text-gray-700' : 'text-white'}`}>About</a>
+              <a href="#about" className={`transition-colors hover:text-blue-600 ${scrolled ? 'text-gray-700' : 'text-white'}`}>About</a>
               <a href="#services" className={`transition-colors hover:text-blue-600 ${scrolled ? 'text-gray-700' : 'text-white'}`}>Services</a>
               <a href="#locations" className={`transition-colors hover:text-blue-600 ${scrolled ? 'text-gray-700' : 'text-white'}`}>Locations</a>
               <button className={`relative transition-colors hover:text-orange-500 ${scrolled ? 'text-gray-700' : 'text-white'}`}>
