@@ -165,7 +165,7 @@ function App() {
 
 
   const products = [
-    { icon: Hammer, name: 'Building Materials', items: 'Cement, Bricks ,Timber, Reinforce mesh and more!', image: 'https://images.pexels.com/photos/2219024/pexels-photo-2219024.jpeg?auto=compress&cs=tinysrgb&w=600' },
+    { icon: Hammer, name: 'Building Materials', items: 'Cement, Bricks ,Timber, Timber & Board Products, Reinforce mesh and more!', image: 'https://images.pexels.com/photos/2219024/pexels-photo-2219024.jpeg?auto=compress&cs=tinysrgb&w=600' },
     { icon: Wrench, name: 'Tools & Equipment', items: 'Power Tools, Hand Tools, Safety Gear', image: 'https://images.pexels.com/photos/279810/pexels-photo-279810.jpeg?auto=compress&cs=tinysrgb&w=600' },
     { icon: Package, name: 'Plumbing Essentials', items: 'Fixings, Fasteners, Adhesives', image: 'https://media.istockphoto.com/id/869658498/photo/plumbing-tools-and-accessories-on-wooden-table-top-view.jpg?s=612x612&w=0&k=20&c=ED8G5fG89rIxvaHKR8DFAKuQywWrLSIw0np-6dGmEsU=' },
     { icon: Shield, name: 'Roofing & Cladding', items: 'IBR Sheets, Ceiling, Insulation', image: 'https://media.istockphoto.com/id/510206115/photo/corrugated-sheets-of-metal.webp?a=1&b=1&s=612x612&w=0&k=20&c=7Tzt_pWi7pIUFhuSn0RDBIi2D_nPJ3jWVEAzf8q94Yg=' },
