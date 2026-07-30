@@ -290,7 +290,7 @@ function App() {
                 <span className="bg-blue-100 text-blue-600 px-4 py-2 rounded-full text-sm font-semibold">About KNK Builders</span>
               </div>
               <h2 className="text-4xl md:text-5xl font-bold text-gray-900 mb-6">
-                Two Decades of Building Excellence
+                Close To Two Decades of Building Excellence
               </h2>
               <p className="text-xl text-gray-600 max-w-3xl mx-auto">
                 Since 2016, KNK Builders has been Mpumalanga's premier supplier of quality hardware materials and building supplies
