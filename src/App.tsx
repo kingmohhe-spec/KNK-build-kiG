@@ -298,7 +298,7 @@ function App() {
 
 We believe in more than just supplying materials. Our team is built on years of hands-on knowledge, so whether you're a contractor sourcing for a big project or a homeowner tackling a weekend fix, you'll find the right products and the right advice, every time.
 
-Reliability, and a genuine commitment to our community — that's what keeps builders coming back to KNK.
+                                       Reliability, and a genuine commitment to our community — that's what keeps builders coming back to KNK.
               </p>
             </div>
 
