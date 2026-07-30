@@ -244,7 +244,7 @@ function App() {
             <h1 className="text-5xl md:text-7xl font-bold mb-6 leading-tight">
               WHERE YOU SPEND LESS & 
               <span className="block bg-gradient-to-r from-orange-400 to-orange-600 bg-clip-text text-transparent">
-                 SAVE-MORE
+                 SAVE_MORE
               </span>
             </h1>
 
