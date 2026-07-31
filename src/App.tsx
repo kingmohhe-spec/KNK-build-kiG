@@ -176,7 +176,7 @@ function App() {
     { icon: Leaf, name: 'Garden & Decoration', items: 'Garden tools (spades, rakes, forks, hoes)
 Wheelbarrows & trolleys
 Hoses, sprinklers & irrigation fittings
-Fencing & trellis', image:'https://www.istockphoto.com/vector/vector-wheelbarrow-with-garden-accessories-gm528915710-93144885' }
+Fencing & trellis', image:'https://www.istockphoto.com/vector/vector-wheelbarrow-with-garden-accessories-gm528915710-93144885'}
   ];
 
   const trustedBrands = [
