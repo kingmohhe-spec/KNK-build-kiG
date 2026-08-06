@@ -2,6 +2,9 @@ import { Hammer, Users, MapPin, Phone, Mail, Clock, Award, Shield, TrendingUp, P
 import { useState, useEffect, useMemo } from 'react';
 import { createClient } from '@supabase/supabase-js';
 import CreditApplicationForm from './components/CreditApplicationForm';
+import CategoryModal from './components/CategoryModal';
+import ParallaxCard from './components/ParallaxCard';
+import { categoryDetails } from './data/categoryDetails';
 
 function App() {
   const [scrolled, setScrolled] = useState(false);
@@ -15,6 +18,7 @@ function App() {
   const [newsletterMessage, setNewsletterMessage] = useState('');
   const [quoteMessage, setQuoteMessage] = useState('');
   const [creditFormOpen, setCreditFormOpen] = useState(false);
+  const [selectedCategory, setSelectedCategory] = useState<string | null>(null);
 
   const supabase = useMemo(() => {
     const url = import.meta.env.VITE_SUPABASE_URL;
@@ -371,29 +375,30 @@ We believe in more than just supplying materials. Our team is built on years of 
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 auto-rows-max">
               {products.map((product, index) => {
                 const isFeatured = index === 0 || index === 4;
+                const hasDetails = categoryDetails[product.name] !== undefined;
                 return (
-                  <div
+                  <ParallaxCard
                     key={index}
-                    className={`bg-white rounded-2xl overflow-hidden shadow-md hover:shadow-2xl transition-all duration-500 group border border-gray-100 hover:border-orange-200 ${
-                      isFeatured ? 'lg:row-span-2 lg:col-span-2' : ''
-                    } transform hover:-translate-y-1`}
+                    image={product.image}
+                    imageHeight={isFeatured ? 'h-64' : 'h-40'}
                   >
-                    <div className={`${isFeatured ? 'h-64' : 'h-40'} overflow-hidden bg-gray-200 relative`}>
-                      <img
-                        src={product.image}
-                        alt={product.name}
-                        className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-500"
-                      />
-                      <div className="absolute inset-0 bg-gradient-to-t from-black/40 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300"></div>
-                    </div>
-                    <div className={`${isFeatured ? 'p-8' : 'p-6'}`}>
+                    <div
+                      className={`${isFeatured ? 'p-8' : 'p-6'} ${hasDetails ? 'cursor-pointer' : ''}`}
+                      onClick={() => hasDetails && setSelectedCategory(product.name)}
+                    >
                       <div className="bg-gradient-to-br from-orange-500 to-orange-600 w-12 h-12 rounded-lg flex items-center justify-center mb-4 group-hover:scale-110 transition-transform shadow-lg">
                         <product.icon className="h-6 w-6 text-white" />
                       </div>
                       <h4 className={`font-bold text-gray-900 mb-2 ${isFeatured ? 'text-2xl' : 'text-lg'}`}>{product.name}</h4>
                       <p className={`text-gray-600 ${isFeatured ? 'text-base' : 'text-sm'}`}>{product.items}</p>
+                      {hasDetails && (
+                        <div className="mt-3 flex items-center gap-1 text-orange-600 text-sm font-semibold">
+                          <span>View products</span>
+                          <ChevronRight className="h-4 w-4 group-hover:translate-x-1 transition-transform" />
+                        </div>
+                      )}
                     </div>
-                  </div>
+                  </ParallaxCard>
                 );
               })}
 
@@ -818,6 +823,13 @@ We believe in more than just supplying materials. Our team is built on years of 
       </footer>
 
       <CreditApplicationForm isOpen={creditFormOpen} onClose={() => setCreditFormOpen(false)} />
+      {selectedCategory && (
+        <CategoryModal
+          categoryName={selectedCategory}
+          products={categoryDetails[selectedCategory] ?? []}
+          onClose={() => setSelectedCategory(null)}
+        />
+      )}
     </div>
   );
 }
