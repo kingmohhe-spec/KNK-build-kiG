@@ -90,7 +90,7 @@ export const categoryDetails: Record<string, CategoryProduct[]> = {
     {
       name: 'IBR & Corrugated Sheeting',
       description: 'IBR roof sheets, corrugated iron, Rolltop Ridging, Harvey tiles',
-      image: 'https://www.google.com/imgres?q=ibr%20and%20corrugated%20roofing%20sheets&imgurl=https%3A%2F%2Flookaside.fbsbx.com%2Flookaside%2Fcrawler%2Fmedia%2F%3Fmedia_id%3D8182228765128289&imgrefurl=https%3A%2F%2Fwww.facebook.com%2Fmarketplace%2Fitem%2F1091404331580345%2F&docid=-C1BeBg_3dp9sM&tbnid=u4TGVFU832b2iM&vet=12ahUKEwiI1K_pro6WAxXYTUEAHYD8BRgQnPAOegUI2wUQAA..i&w=1080&h=915&hcb=2&itg=1&ved=2ahUKEwiI1K_pro6WAxXYTUEAHYD8BRgQnPAOegUI2wUQAA',
+      image: 'https://lookaside.fbsbx.com/lookaside/crawler/media/?media_id=8182228765128289',
     },
     {
       name: 'Roof Tiles',
