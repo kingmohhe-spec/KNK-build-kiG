@@ -371,7 +371,7 @@ We believe in more than just supplying materials. Our team is built on years of 
 
 
           <div className="max-w-7xl mx-auto mb-20">
-            <h3 className="text-3xl font-bold text-gray-900 mb-12 text-center">Time to Spend less and Save more! with</h3>
+            <h3 className="text-3xl font-bold text-gray-900 mb-12 text-center">TIME to SPENDLESS and SAVE MORE! WITH</h3>
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 auto-rows-max">
               {products.map((product, index) => {
                 const isFeatured = index === 0 || index === 4;
