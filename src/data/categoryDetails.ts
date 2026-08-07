@@ -116,7 +116,7 @@ export const categoryDetails: Record<string, CategoryProduct[]> = {
   'Flooring & Finishes': [
     {
       name: 'Ceramic & Porcelain Tiles',
-      description: 'Floor tiles, wall tiles, porcelain tiles',
+      description: 'Floor tiles, wall tiles, Mesoic Tile,porcelain tiles',
       image: 'https://images.pexels.com/photos/8092429/pexels-photo-8092429.jpeg?auto=compress&cs=tinysrgb&h=650&w=940',
     },
     {
