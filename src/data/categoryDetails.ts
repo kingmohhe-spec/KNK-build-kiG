@@ -104,7 +104,7 @@ export const categoryDetails: Record<string, CategoryProduct[]> = {
     },
     {
       name: 'Paint Solutions',
-      description: 'Ceiling insulation, Enamel Paint, Waterproofing Paint, Primers and Undercoats, PVA and Acrylic, Roofing paint',
+      description: 'Enamel Paint, Waterproofing Paint, Primers and Undercoats, PVA and Acrylic, Roofing paint',
       image: 'https://images.pexels.com/photos/4457372/pexels-photo-4457372.jpeg?auto=compress&cs=tinysrgb&h=650&w=940',
     },
     {
