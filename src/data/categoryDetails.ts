@@ -7,7 +7,7 @@ export interface CategoryProduct {
 export const categoryDetails: Record<string, CategoryProduct[]> = {
   'Building Materials': [
     {
-      name: 'Cement & Concrete',
+      name: 'Cement & Building essentials',
       description: 'Cement bags',
       image: 'https://images.pexels.com/photos/29817952/pexels-photo-29817952.jpeg?auto=compress&cs=tinysrgb&h=650&w=940',
     },
