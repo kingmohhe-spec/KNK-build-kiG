@@ -89,7 +89,7 @@ export const categoryDetails: Record<string, CategoryProduct[]> = {
   'Roofing & Cladding': [
     {
       name: 'IBR & Corrugated Sheeting',
-      description: 'IBR roof sheets, corrugated iron, Rolltop Ridging',
+      description: 'IBR roof sheets, corrugated iron, Rolltop Ridging, Harvey tiles',
       image: 'https://images.pexels.com/photos/10443918/pexels-photo-10443918.jpeg?auto=compress&cs=tinysrgb&h=650&w=940',
     },
     {
