@@ -99,7 +99,7 @@ export const categoryDetails: Record<string, CategoryProduct[]> = {
     },
     {
       name: 'Trusses & Timber Roofing',
-      description: 'Pre-fabricated trusses, rafters, timber beams',
+      description: 'Kaapa, Treated Poles (CCA), Brandering',
       image: 'https://images.pexels.com/photos/8491084/pexels-photo-8491084.jpeg?auto=compress&cs=tinysrgb&h=650&w=940',
     },
     {
@@ -121,7 +121,7 @@ export const categoryDetails: Record<string, CategoryProduct[]> = {
     },
     {
       name: 'Vinyl & Laminate Flooring',
-      description: 'Vinyl planks, laminate flooring, engineered wood',
+      description: 'Vinyl, laminate flooring, engineered wood',
       image: 'https://images.pexels.com/photos/4263067/pexels-photo-4263067.jpeg?auto=compress&cs=tinysrgb&h=650&w=940',
     },
     {
