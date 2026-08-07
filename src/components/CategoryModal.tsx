@@ -1,14 +1,16 @@
 import { X } from 'lucide-react';
 import { useEffect } from 'react';
 import type { CategoryProduct } from '../data/categoryDetails';
+import { resolveImage } from '../data/supabaseClient';
 
 interface CategoryModalProps {
   categoryName: string;
   products: CategoryProduct[];
+  customImages?: Record<string, string>;
   onClose: () => void;
 }
 
-export default function CategoryModal({ categoryName, products, onClose }: CategoryModalProps) {
+export default function CategoryModal({ categoryName, products, customImages = {}, onClose }: CategoryModalProps) {
   useEffect(() => {
     const handleEsc = (e: KeyboardEvent) => {
       if (e.key === 'Escape') onClose();
@@ -53,7 +55,7 @@ export default function CategoryModal({ categoryName, products, onClose }: Categ
                 >
                   <div className="h-48 overflow-hidden bg-gray-200 relative">
                     <img
-                      src={product.image}
+                      src={resolveImage(categoryName, product, customImages)}
                       alt={product.name}
                       className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-500"
                     />

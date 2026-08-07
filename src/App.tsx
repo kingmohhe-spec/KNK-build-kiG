@@ -5,6 +5,9 @@ import CreditApplicationForm from './components/CreditApplicationForm';
 import CategoryModal from './components/CategoryModal';
 import ParallaxCard from './components/ParallaxCard';
 import { categoryDetails } from './data/categoryDetails';
+import { fetchCustomImages, resolveImage } from './data/supabaseClient';
+
+
 
 function App() {
   const [scrolled, setScrolled] = useState(false);
@@ -19,6 +22,7 @@ function App() {
   const [quoteMessage, setQuoteMessage] = useState('');
   const [creditFormOpen, setCreditFormOpen] = useState(false);
   const [selectedCategory, setSelectedCategory] = useState<string | null>(null);
+  const [customImages, setCustomImages] = useState<Record<string, string>>({});
 
   const supabase = useMemo(() => {
     const url = import.meta.env.VITE_SUPABASE_URL;
@@ -38,6 +42,10 @@ function App() {
     };
     window.addEventListener('scroll', handleScroll);
     return () => window.removeEventListener('scroll', handleScroll);
+  }, []);
+
+  useEffect(() => {
+    fetchCustomImages().then(setCustomImages);
   }, []);
 
   const handleNewsletterSubmit = async (e: React.FormEvent) => {
@@ -818,6 +826,7 @@ We believe in more than just supplying materials. Our team is built on years of 
 
           <div className="border-t border-gray-800 pt-8 text-center text-gray-400">
             <p>&copy; {new Date().getFullYear()} KNK Builders. All rights reserved. | Mpumalanga, South Africa</p>
+            <a href="/admin" className="text-gray-600 hover:text-orange-400 text-xs transition-colors mt-2 inline-block">Admin</a>
           </div>
         </div>
       </footer>
@@ -827,6 +836,7 @@ We believe in more than just supplying materials. Our team is built on years of 
         <CategoryModal
           categoryName={selectedCategory}
           products={categoryDetails[selectedCategory] ?? []}
+          customImages={customImages}
           onClose={() => setSelectedCategory(null)}
         />
       )}
