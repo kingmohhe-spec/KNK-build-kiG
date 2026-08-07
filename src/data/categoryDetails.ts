@@ -141,7 +141,7 @@ export const categoryDetails: Record<string, CategoryProduct[]> = {
     },
     {
       name: 'Wallpaper & Wall Panels',
-      description: 'Decorative wallpaper, wall panels, 3D panels',
+      description: 'Decorative wallpaper, wall panels',
       image: 'https://images.pexels.com/photos/6908566/pexels-photo-6908566.jpeg?auto=compress&cs=tinysrgb&h=650&w=940',
     },
   ],
