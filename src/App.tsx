@@ -826,7 +826,7 @@ We believe in more than just supplying materials. Our team is built on years of 
 
           <div className="border-t border-gray-800 pt-8 text-center text-gray-400">
             <p>&copy; {new Date().getFullYear()} KNK Builders. All rights reserved. | Mpumalanga, South Africa</p>
-            <a href="/admin" className="text-gray-600 hover:text-orange-400 text-xs transition-colors mt-2 inline-block">Admin</a>
+            <a href="#admin" className="text-gray-600 hover:text-orange-400 text-xs transition-colors mt-2 inline-block">Admin</a>
           </div>
         </div>
       </footer>

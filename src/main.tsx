@@ -4,8 +4,8 @@ import App from './App.tsx';
 import AdminPage from './pages/AdminPage.tsx';
 import './index.css';
 
-const path = window.location.pathname;
-const isAdmin = path === '/admin' || path === '/admin/' || path.startsWith('/admin?');
+const hash = window.location.hash.replace(/^#\/?/, '');
+const isAdmin = hash === 'admin' || hash === 'admin/';
 
 createRoot(document.getElementById('root')!).render(
   <StrictMode>

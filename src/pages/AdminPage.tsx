@@ -109,7 +109,7 @@ export default function AdminPage() {
               {loading ? <Loader2 className="h-5 w-5 animate-spin" /> : 'Sign In'}
             </button>
           </form>
-          <a href="/" className="block text-center mt-6 text-sm text-gray-500 hover:text-orange-600 transition-colors">
+          <a href="#" className="block text-center mt-6 text-sm text-gray-500 hover:text-orange-600 transition-colors">
             ← Back to website
           </a>
         </div>
@@ -123,7 +123,7 @@ export default function AdminPage() {
         <div className="container mx-auto px-6 py-4 flex items-center justify-between">
           <h1 className="text-xl font-bold text-gray-900">Image Manager</h1>
           <div className="flex items-center gap-4">
-            <a href="/" className="text-sm text-gray-500 hover:text-orange-600 transition-colors">View site</a>
+            <a href="#" className="text-sm text-gray-500 hover:text-orange-600 transition-colors">View site</a>
             <button onClick={handleLogout} className="flex items-center gap-2 text-sm text-gray-600 hover:text-red-600 transition-colors">
               <LogOut className="h-4 w-4" /> Sign out
             </button>
