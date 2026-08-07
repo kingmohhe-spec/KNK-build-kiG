@@ -40,7 +40,7 @@ export const categoryDetails: Record<string, CategoryProduct[]> = {
     },
     {
       name: 'Measuring Tools',
-      description: 'Tape measures, spirit levels, laser levels',
+      description: 'Tape measures, spirit levels',
       image: 'https://images.pexels.com/photos/4312854/pexels-photo-4312854.jpeg?auto=compress&cs=tinysrgb&h=650&w=940',
     },
     {
