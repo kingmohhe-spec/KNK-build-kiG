@@ -99,7 +99,7 @@ export const categoryDetails: Record<string, CategoryProduct[]> = {
     },
     {
       name: 'Trusses & Timber Roofing',
-      description: 'Kaapa, Treated Poles (CCA), Brandering',
+      description: 'Kaapa, Pareline, Treated Poles (CCA), Brandering',
       image: 'https://images.pexels.com/photos/8491084/pexels-photo-8491084.jpeg?auto=compress&cs=tinysrgb&h=650&w=940',
     },
     {
