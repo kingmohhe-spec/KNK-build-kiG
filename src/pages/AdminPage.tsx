@@ -1,18 +1,34 @@
 import { useState, useEffect } from 'react';
 import { supabase } from '../data/supabaseClient';
 import { categoryDetails } from '../data/categoryDetails';
-import { uploadProductImage } from '../data/supabaseClient';
-import { Lock, Upload, Check, LogOut, Loader2 } from 'lucide-react';
+import { uploadProductImage, uploadBrandImage, loadLocalImageOverrides, loadLocalBrandOverrides } from '../data/supabaseClient';
+import { Lock, Upload, Check, LogOut, Loader2, Image, Award } from 'lucide-react';
 
 const ADMIN_PASSWORD = 'BuildBase2025!';
 const SESSION_KEY = 'admin-authed';
+
+const DEFAULT_BRANDS = [
+  'INCGO',
+  'MAMBA CEMENT',
+  'LIN TANK',
+  'MEDAL PAINT',
+  'GOLDEN CHOICE PAINTS',
+  'DURAM PAINT',
+  'EUREKA',
+  'ACADEMY BRUSHWARE',
+  'POWAFIX',
+  'PPC CEMENT',
+  'AFRISASM CEMENT',
+];
 
 export default function AdminPage() {
   const [password, setPassword] = useState('');
   const [authError, setAuthError] = useState('');
   const [loading, setLoading] = useState(false);
   const [authed, setAuthed] = useState<boolean>(false);
+  const [tab, setTab] = useState<'products' | 'brands'>('products');
   const [customImages, setCustomImages] = useState<Record<string, string>>({});
+  const [brandImages, setBrandImages] = useState<Record<string, string>>({});
   const [uploadingKey, setUploadingKey] = useState<string | null>(null);
   const [uploadMessage, setUploadMessage] = useState<Record<string, string>>({});
 
@@ -21,18 +37,34 @@ export default function AdminPage() {
   }, []);
 
   useEffect(() => {
-    if (authed) loadCustomImages();
+    if (authed) {
+      loadCustomImages();
+      loadBrandImages();
+    }
   }, [authed]);
 
   async function loadCustomImages() {
+    const localOverrides = loadLocalImageOverrides();
     const { data } = await supabase!.from('product_images').select('category_name, product_name, image_url');
+    const map: Record<string, string> = { ...localOverrides };
     if (data) {
-      const map: Record<string, string> = {};
       for (const row of data) {
         map[`${row.category_name}::${row.product_name}`] = row.image_url;
       }
-      setCustomImages(map);
     }
+    setCustomImages(map);
+  }
+
+  async function loadBrandImages() {
+    const localOverrides = loadLocalBrandOverrides();
+    const { data } = await supabase!.from('brand_images').select('brand_name, image_url');
+    const map: Record<string, string> = { ...localOverrides };
+    if (data) {
+      for (const row of data) {
+        map[row.brand_name] = row.image_url;
+      }
+    }
+    setBrandImages(map);
   }
 
   function handleLogin(e: React.FormEvent) {
@@ -72,6 +104,25 @@ export default function AdminPage() {
     }
   }
 
+  async function handleBrandUpload(brandName: string, file: File) {
+    const key = `brand::${brandName}`;
+    setUploadingKey(key);
+    try {
+      const url = await uploadBrandImage(brandName, file);
+      if (url) {
+        setBrandImages((prev) => ({ ...prev, [brandName]: url }));
+        setUploadMessage((prev) => ({ ...prev, [key]: 'Logo updated!' }));
+        setTimeout(() => setUploadMessage((prev) => { const n = { ...prev }; delete n[key]; return n; }), 3000);
+      } else {
+        setUploadMessage((prev) => ({ ...prev, [key]: 'Upload failed. Try again.' }));
+      }
+    } catch {
+      setUploadMessage((prev) => ({ ...prev, [key]: 'Upload failed. Try again.' }));
+    } finally {
+      setUploadingKey(null);
+    }
+  }
+
   if (!authed) {
     return (
       <div className="min-h-screen bg-gradient-to-br from-slate-950 via-blue-950 to-slate-900 flex items-center justify-center p-4">
@@ -82,7 +133,7 @@ export default function AdminPage() {
             </div>
           </div>
           <h1 className="text-2xl font-bold text-gray-900 text-center mb-2">Admin Login</h1>
-          <p className="text-gray-500 text-center mb-8 text-sm">Sign in to manage product images</p>
+          <p className="text-gray-500 text-center mb-8 text-sm">Sign in to manage product images and brand logos</p>
           <form onSubmit={handleLogin} className="space-y-4">
             <input
               type="password"
@@ -125,28 +176,98 @@ export default function AdminPage() {
       </header>
 
       <div className="container mx-auto px-6 py-8 max-w-6xl">
-        <p className="text-gray-600 mb-8">Upload a photo for any product. The new image will appear on the website immediately.</p>
-        {Object.entries(categoryDetails).map(([category, products]) => (
-          <div key={category} className="mb-10">
-            <h2 className="text-lg font-bold text-gray-900 mb-4 pb-2 border-b border-gray-200">{category}</h2>
+        <div className="flex gap-2 mb-8">
+          <button
+            onClick={() => setTab('products')}
+            className={`flex items-center gap-2 px-5 py-2.5 rounded-lg font-medium text-sm transition-all ${tab === 'products' ? 'bg-orange-500 text-white shadow-md' : 'bg-white text-gray-600 border border-gray-200 hover:border-orange-300'}`}
+          >
+            <Image className="h-4 w-4" /> Product Images
+          </button>
+          <button
+            onClick={() => setTab('brands')}
+            className={`flex items-center gap-2 px-5 py-2.5 rounded-lg font-medium text-sm transition-all ${tab === 'brands' ? 'bg-orange-500 text-white shadow-md' : 'bg-white text-gray-600 border border-gray-200 hover:border-orange-300'}`}
+          >
+            <Award className="h-4 w-4" /> Brand Logos
+          </button>
+        </div>
+
+        {tab === 'products' && (
+          <>
+            <p className="text-gray-600 mb-8">Upload a photo for any product. The new image will appear on the website immediately.</p>
+            {Object.entries(categoryDetails).map(([category, products]) => (
+              <div key={category} className="mb-10">
+                <h2 className="text-lg font-bold text-gray-900 mb-4 pb-2 border-b border-gray-200">{category}</h2>
+                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
+                  {products.map((product) => {
+                    const key = `${category}::${product.name}`;
+                    const currentImage = customImages[key] ?? product.image;
+                    const isUploading = uploadingKey === key;
+                    return (
+                      <div key={product.name} className="bg-white rounded-2xl shadow-md border border-gray-100 overflow-hidden">
+                        <div className="h-40 overflow-hidden bg-gray-200 relative">
+                          <img src={currentImage} alt={product.name} className="w-full h-full object-cover" />
+                        </div>
+                        <div className="p-4">
+                          <h3 className="font-bold text-gray-900 text-sm mb-1">{product.name}</h3>
+                          <p className="text-gray-500 text-xs mb-3 line-clamp-2">{product.description}</p>
+                          <label className={`flex items-center justify-center gap-2 w-full border border-gray-200 rounded-lg py-2 text-sm font-medium cursor-pointer transition-all ${isUploading ? 'opacity-50 cursor-wait' : 'hover:border-orange-400 hover:text-orange-600'}`}>
+                            {isUploading ? (
+                              <><Loader2 className="h-4 w-4 animate-spin" /> Uploading...</>
+                            ) : (
+                              <><Upload className="h-4 w-4" /> Upload photo</>
+                            )}
+                            <input
+                              type="file"
+                              accept="image/*"
+                              className="hidden"
+                              disabled={isUploading}
+                              onChange={(e) => {
+                                const file = e.target.files?.[0];
+                                if (file) handleUpload(category, product.name, file);
+                                e.target.value = '';
+                              }}
+                            />
+                          </label>
+                          {uploadMessage[key] && (
+                            <p className={`text-xs mt-2 flex items-center gap-1 ${uploadMessage[key].includes('updated') ? 'text-green-600' : 'text-red-500'}`}>
+                              {uploadMessage[key].includes('updated') && <Check className="h-3 w-3" />}
+                              {uploadMessage[key]}
+                            </p>
+                          )}
+                        </div>
+                      </div>
+                    );
+                  })}
+                </div>
+              </div>
+            ))}
+          </>
+        )}
+
+        {tab === 'brands' && (
+          <>
+            <p className="text-gray-600 mb-8">Upload a logo for any trusted brand. The new logo will appear on the website immediately.</p>
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
-              {products.map((product) => {
-                const key = `${category}::${product.name}`;
-                const currentImage = customImages[key] ?? product.image;
+              {DEFAULT_BRANDS.map((brandName) => {
+                const key = `brand::${brandName}`;
+                const currentLogo = brandImages[brandName];
                 const isUploading = uploadingKey === key;
                 return (
-                  <div key={product.name} className="bg-white rounded-2xl shadow-md border border-gray-100 overflow-hidden">
-                    <div className="h-40 overflow-hidden bg-gray-200 relative">
-                      <img src={currentImage} alt={product.name} className="w-full h-full object-cover" />
+                  <div key={brandName} className="bg-white rounded-2xl shadow-md border border-gray-100 overflow-hidden">
+                    <div className="h-40 overflow-hidden bg-gray-100 relative flex items-center justify-center">
+                      {currentLogo ? (
+                        <img src={currentLogo} alt={brandName} className="w-full h-full object-contain" />
+                      ) : (
+                        <div className="text-gray-400 text-sm">No logo uploaded yet</div>
+                      )}
                     </div>
                     <div className="p-4">
-                      <h3 className="font-bold text-gray-900 text-sm mb-1">{product.name}</h3>
-                      <p className="text-gray-500 text-xs mb-3 line-clamp-2">{product.description}</p>
+                      <h3 className="font-bold text-gray-900 text-sm mb-3">{brandName}</h3>
                       <label className={`flex items-center justify-center gap-2 w-full border border-gray-200 rounded-lg py-2 text-sm font-medium cursor-pointer transition-all ${isUploading ? 'opacity-50 cursor-wait' : 'hover:border-orange-400 hover:text-orange-600'}`}>
                         {isUploading ? (
                           <><Loader2 className="h-4 w-4 animate-spin" /> Uploading...</>
                         ) : (
-                          <><Upload className="h-4 w-4" /> Upload photo</>
+                          <><Upload className="h-4 w-4" /> Upload logo</>
                         )}
                         <input
                           type="file"
@@ -155,7 +276,7 @@ export default function AdminPage() {
                           disabled={isUploading}
                           onChange={(e) => {
                             const file = e.target.files?.[0];
-                            if (file) handleUpload(category, product.name, file);
+                            if (file) handleBrandUpload(brandName, file);
                             e.target.value = '';
                           }}
                         />
@@ -171,8 +292,8 @@ export default function AdminPage() {
                 );
               })}
             </div>
-          </div>
-        ))}
+          </>
+        )}
       </div>
     </div>
   );

@@ -5,7 +5,7 @@ import CreditApplicationForm from './components/CreditApplicationForm';
 import CategoryModal from './components/CategoryModal';
 import ParallaxCard from './components/ParallaxCard';
 import { categoryDetails } from './data/categoryDetails';
-import { fetchCustomImages, resolveImage } from './data/supabaseClient';
+import { fetchCustomImages, resolveImage, fetchBrandImages } from './data/supabaseClient';
 
 
 
@@ -23,6 +23,7 @@ function App() {
   const [creditFormOpen, setCreditFormOpen] = useState(false);
   const [selectedCategory, setSelectedCategory] = useState<string | null>(null);
   const [customImages, setCustomImages] = useState<Record<string, string>>({});
+  const [brandImages, setBrandImages] = useState<Record<string, string>>({});
 
   const supabase = useMemo(() => {
     const url = import.meta.env.VITE_SUPABASE_URL;
@@ -46,6 +47,7 @@ function App() {
 
   useEffect(() => {
     fetchCustomImages().then(setCustomImages);
+    fetchBrandImages().then(setBrandImages);
   }, []);
 
   const handleNewsletterSubmit = async (e: React.FormEvent) => {
@@ -446,9 +448,9 @@ We believe in more than just supplying materials. Our team is built on years of 
                 >
                   <div className="absolute inset-0 bg-gradient-to-br from-orange-500/0 to-orange-600/0 group-hover:from-orange-500/5 group-hover:to-orange-600/10 transition-all duration-500"></div>
                   <div className="relative z-10 text-center transform group-hover:scale-105 transition-transform duration-300">
-                    {brand.logo ? (
+                    {(brandImages[brand.name] ?? brand.logo) ? (
                       <img
-                        src={brand.logo}
+                        src={brandImages[brand.name] ?? brand.logo}
                         alt={brand.name}
                         className="h-14 w-14 object-contain mx-auto mb-3 opacity-80 group-hover:opacity-100 transition-opacity"
                       />
