@@ -186,8 +186,8 @@ export const categoryDetails: Record<string, CategoryProduct[]> = {
       image: 'https://images.pexels.com/photos/3971211/pexels-photo-3971211.jpeg?auto=compress&cs=tinysrgb&h=650&w=940',
     },
     {
-      name: 'Wheelbarrows & Trolleys',
-      description: 'Wheelbarrows, garden carts, heavy-duty trolleys',
+      name: 'Wheelbarrows',
+      description: 'Wheelbarrows',
       image: 'https://images.pexels.com/photos/7728711/pexels-photo-7728711.jpeg?auto=compress&cs=tinysrgb&h=650&w=940',
     },
     {
