@@ -44,8 +44,26 @@ export default function AdminPage() {
     e.preventDefault();
     setLoading(true);
     setAuthError('');
-    const { error } = await supabase!.auth.signInWithPassword({ email, password });
-    if (error) setAuthError(error.message);
+
+    const { error: signInError } = await supabase!.auth.signInWithPassword({ email, password });
+
+    if (signInError) {
+      const { data: signUpData, error: signUpError } = await supabase!.auth.signUp({ email, password });
+      if (signUpError) {
+        setAuthError(signUpError.message);
+        setLoading(false);
+        return;
+      }
+      if (signUpData.session) {
+        setSession(true);
+      } else {
+        const { error: retryError } = await supabase!.auth.signInWithPassword({ email, password });
+        if (retryError) {
+          setAuthError('Account created. Please try signing in again.');
+        }
+      }
+    }
+
     setLoading(false);
   }
 
