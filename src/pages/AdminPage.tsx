@@ -4,30 +4,25 @@ import { categoryDetails } from '../data/categoryDetails';
 import { uploadProductImage } from '../data/supabaseClient';
 import { Lock, Upload, Check, LogOut, Loader2 } from 'lucide-react';
 
+const ADMIN_PASSWORD = 'BuildBase2025!';
+const SESSION_KEY = 'admin-authed';
+
 export default function AdminPage() {
-  const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [authError, setAuthError] = useState('');
   const [loading, setLoading] = useState(false);
-  const [session, setSession] = useState<boolean>(false);
+  const [authed, setAuthed] = useState<boolean>(false);
   const [customImages, setCustomImages] = useState<Record<string, string>>({});
   const [uploadingKey, setUploadingKey] = useState<string | null>(null);
   const [uploadMessage, setUploadMessage] = useState<Record<string, string>>({});
 
   useEffect(() => {
-    supabase?.auth.getSession().then(({ data }) => {
-      setSession(!!data.session);
-    });
-    if (!supabase) return;
-    const { data: sub } = supabase.auth.onAuthStateChange((_event, sess) => {
-      setSession(!!sess);
-    });
-    return () => sub.subscription.unsubscribe();
+    setAuthed(sessionStorage.getItem(SESSION_KEY) === '1');
   }, []);
 
   useEffect(() => {
-    if (session) loadCustomImages();
-  }, [session]);
+    if (authed) loadCustomImages();
+  }, [authed]);
 
   async function loadCustomImages() {
     const { data } = await supabase!.from('product_images').select('category_name, product_name, image_url');
@@ -40,35 +35,22 @@ export default function AdminPage() {
     }
   }
 
-  async function handleLogin(e: React.FormEvent) {
+  function handleLogin(e: React.FormEvent) {
     e.preventDefault();
     setLoading(true);
     setAuthError('');
-
-    const { error: signInError } = await supabase!.auth.signInWithPassword({ email, password });
-
-    if (signInError) {
-      const { data: signUpData, error: signUpError } = await supabase!.auth.signUp({ email, password });
-      if (signUpError) {
-        setAuthError(signUpError.message);
-        setLoading(false);
-        return;
-      }
-      if (signUpData.session) {
-        setSession(true);
-      } else {
-        const { error: retryError } = await supabase!.auth.signInWithPassword({ email, password });
-        if (retryError) {
-          setAuthError('Account created. Please try signing in again.');
-        }
-      }
+    if (password === ADMIN_PASSWORD) {
+      sessionStorage.setItem(SESSION_KEY, '1');
+      setAuthed(true);
+    } else {
+      setAuthError('Incorrect password. Please try again.');
     }
-
     setLoading(false);
   }
 
-  async function handleLogout() {
-    await supabase!.auth.signOut();
+  function handleLogout() {
+    sessionStorage.removeItem(SESSION_KEY);
+    setAuthed(false);
   }
 
   async function handleUpload(category: string, product: string, file: File) {
@@ -90,7 +72,7 @@ export default function AdminPage() {
     }
   }
 
-  if (!session) {
+  if (!authed) {
     return (
       <div className="min-h-screen bg-gradient-to-br from-slate-950 via-blue-950 to-slate-900 flex items-center justify-center p-4">
         <div className="bg-white rounded-3xl shadow-2xl p-10 max-w-md w-full">
@@ -103,20 +85,13 @@ export default function AdminPage() {
           <p className="text-gray-500 text-center mb-8 text-sm">Sign in to manage product images</p>
           <form onSubmit={handleLogin} className="space-y-4">
             <input
-              type="email"
-              placeholder="Email address"
-              value={email}
-              onChange={(e) => setEmail(e.target.value)}
-              className="w-full border border-gray-200 rounded-lg px-4 py-3 text-gray-900 focus:outline-none focus:border-orange-400 focus:ring-1 focus:ring-orange-400"
-              required
-            />
-            <input
               type="password"
               placeholder="Password"
               value={password}
               onChange={(e) => setPassword(e.target.value)}
               className="w-full border border-gray-200 rounded-lg px-4 py-3 text-gray-900 focus:outline-none focus:border-orange-400 focus:ring-1 focus:ring-orange-400"
               required
+              autoFocus
             />
             {authError && <p className="text-red-500 text-sm text-center">{authError}</p>}
             <button
