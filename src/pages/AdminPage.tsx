@@ -1,11 +1,22 @@
 import { useState, useEffect } from 'react';
 import { supabase } from '../data/supabaseClient';
 import { categoryDetails } from '../data/categoryDetails';
-import { uploadProductImage, uploadBrandImage, loadLocalImageOverrides, loadLocalBrandOverrides } from '../data/supabaseClient';
-import { Lock, Upload, Check, LogOut, Loader2, Image, Award } from 'lucide-react';
+import { uploadProductImage, uploadBrandImage, uploadMainCategoryImage, loadLocalImageOverrides, loadLocalBrandOverrides, loadLocalMainCategoryOverrides } from '../data/supabaseClient';
+import { Lock, Upload, Check, LogOut, Loader2, Image, Award, Layers } from 'lucide-react';
 
 const ADMIN_PASSWORD = 'BuildBase2025!';
 const SESSION_KEY = 'admin-authed';
+
+const MAIN_CATEGORIES = [
+  'Building Materials',
+  'Tools & Equipment',
+  'Plumbing & Essentials',
+  'Roofing & Cladding',
+  'Flooring & Finishes',
+  'Doors & Fittings',
+  'Security',
+  'Garden & Decoration',
+];
 
 const DEFAULT_BRANDS = [
   'INCGO',
@@ -26,9 +37,10 @@ export default function AdminPage() {
   const [authError, setAuthError] = useState('');
   const [loading, setLoading] = useState(false);
   const [authed, setAuthed] = useState<boolean>(false);
-  const [tab, setTab] = useState<'products' | 'brands'>('products');
+  const [tab, setTab] = useState<'products' | 'brands' | 'categories'>('products');
   const [customImages, setCustomImages] = useState<Record<string, string>>({});
   const [brandImages, setBrandImages] = useState<Record<string, string>>({});
+  const [mainCategoryImages, setMainCategoryImages] = useState<Record<string, string>>({});
   const [uploadingKey, setUploadingKey] = useState<string | null>(null);
   const [uploadMessage, setUploadMessage] = useState<Record<string, string>>({});
 
@@ -40,6 +52,7 @@ export default function AdminPage() {
     if (authed) {
       loadCustomImages();
       loadBrandImages();
+      loadMainCategoryImages();
     }
   }, [authed]);
 
@@ -53,6 +66,20 @@ export default function AdminPage() {
       }
     }
     setCustomImages(map);
+  }
+
+  async function loadMainCategoryImages() {
+    const localOverrides = loadLocalMainCategoryOverrides();
+    const { data } = await supabase!.from('product_images')
+      .select('product_name, image_url')
+      .eq('category_name', '__main_category__');
+    const map: Record<string, string> = { ...localOverrides };
+    if (data) {
+      for (const row of data) {
+        map[row.product_name] = row.image_url;
+      }
+    }
+    setMainCategoryImages(map);
   }
 
   async function loadBrandImages() {
@@ -92,6 +119,25 @@ export default function AdminPage() {
       const url = await uploadProductImage(category, product, file);
       if (url) {
         setCustomImages((prev) => ({ ...prev, [key]: url }));
+        setUploadMessage((prev) => ({ ...prev, [key]: 'Image updated!' }));
+        setTimeout(() => setUploadMessage((prev) => { const n = { ...prev }; delete n[key]; return n; }), 3000);
+      } else {
+        setUploadMessage((prev) => ({ ...prev, [key]: 'Upload failed. Try again.' }));
+      }
+    } catch {
+      setUploadMessage((prev) => ({ ...prev, [key]: 'Upload failed. Try again.' }));
+    } finally {
+      setUploadingKey(null);
+    }
+  }
+
+  async function handleMainCategoryUpload(categoryName: string, file: File) {
+    const key = `maincat::${categoryName}`;
+    setUploadingKey(key);
+    try {
+      const url = await uploadMainCategoryImage(categoryName, file);
+      if (url) {
+        setMainCategoryImages((prev) => ({ ...prev, [categoryName]: url }));
         setUploadMessage((prev) => ({ ...prev, [key]: 'Image updated!' }));
         setTimeout(() => setUploadMessage((prev) => { const n = { ...prev }; delete n[key]; return n; }), 3000);
       } else {
@@ -189,6 +235,12 @@ export default function AdminPage() {
           >
             <Award className="h-4 w-4" /> Brand Logos
           </button>
+          <button
+            onClick={() => setTab('categories')}
+            className={`flex items-center gap-2 px-5 py-2.5 rounded-lg font-medium text-sm transition-all ${tab === 'categories' ? 'bg-orange-500 text-white shadow-md' : 'bg-white text-gray-600 border border-gray-200 hover:border-orange-300'}`}
+          >
+            <Layers className="h-4 w-4" /> Main Categories
+          </button>
         </div>
 
         {tab === 'products' && (
@@ -241,6 +293,57 @@ export default function AdminPage() {
                 </div>
               </div>
             ))}
+          </>
+        )}
+
+        {tab === 'categories' && (
+          <>
+            <p className="text-gray-600 mb-8">Upload a photo for any main category card. The new image will appear on the website immediately.</p>
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
+              {MAIN_CATEGORIES.map((catName) => {
+                const key = `maincat::${catName}`;
+                const currentImage = mainCategoryImages[catName];
+                const isUploading = uploadingKey === key;
+                return (
+                  <div key={catName} className="bg-white rounded-2xl shadow-md border border-gray-100 overflow-hidden">
+                    <div className="h-40 overflow-hidden bg-gray-200 relative flex items-center justify-center">
+                      {currentImage ? (
+                        <img src={currentImage} alt={catName} className="w-full h-full object-cover" />
+                      ) : (
+                        <div className="text-gray-400 text-sm">No custom image uploaded yet</div>
+                      )}
+                    </div>
+                    <div className="p-4">
+                      <h3 className="font-bold text-gray-900 text-sm mb-3">{catName}</h3>
+                      <label className={`flex items-center justify-center gap-2 w-full border border-gray-200 rounded-lg py-2 text-sm font-medium cursor-pointer transition-all ${isUploading ? 'opacity-50 cursor-wait' : 'hover:border-orange-400 hover:text-orange-600'}`}>
+                        {isUploading ? (
+                          <><Loader2 className="h-4 w-4 animate-spin" /> Uploading...</>
+                        ) : (
+                          <><Upload className="h-4 w-4" /> Upload photo</>
+                        )}
+                        <input
+                          type="file"
+                          accept="image/*"
+                          className="hidden"
+                          disabled={isUploading}
+                          onChange={(e) => {
+                            const file = e.target.files?.[0];
+                            if (file) handleMainCategoryUpload(catName, file);
+                            e.target.value = '';
+                          }}
+                        />
+                      </label>
+                      {uploadMessage[key] && (
+                        <p className={`text-xs mt-2 flex items-center gap-1 ${uploadMessage[key].includes('updated') ? 'text-green-600' : 'text-red-500'}`}>
+                          {uploadMessage[key].includes('updated') && <Check className="h-3 w-3" />}
+                          {uploadMessage[key]}
+                        </p>
+                      )}
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
           </>
         )}
 

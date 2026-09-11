@@ -144,3 +144,65 @@ export function loadLocalBrandOverrides(): Record<string, string> {
     return {};
   }
 }
+
+const MAIN_CATEGORY_KEY = '__main_category__';
+
+export async function fetchMainCategoryImages(): Promise<Record<string, string>> {
+  const localOverrides = loadLocalMainCategoryOverrides();
+  if (!supabase) return localOverrides;
+  const { data, error } = await supabase
+    .from('product_images')
+    .select('product_name, image_url')
+    .eq('category_name', MAIN_CATEGORY_KEY);
+  const map: Record<string, string> = { ...localOverrides };
+  if (error || !data) return map;
+  for (const row of data as Pick<ProductImageRow, 'product_name' | 'image_url'>[]) {
+    map[row.product_name] = row.image_url;
+  }
+  return map;
+}
+
+export async function uploadMainCategoryImage(
+  categoryName: string,
+  file: File
+): Promise<string | null> {
+  if (!supabase) return null;
+  const ext = file.name.split('.').pop()?.toLowerCase() ?? 'jpg';
+  const safeName = categoryName.toLowerCase().replace(/[^a-z0-9]/g, '-');
+  const filePath = `main-category/${safeName}-${Date.now()}.${ext}`;
+
+  const { error: uploadError } = await supabase.storage
+    .from('product-images')
+    .upload(filePath, file, { cacheControl: '3600', upsert: true });
+  if (uploadError) return null;
+
+  const { data: pub } = supabase.storage.from('product-images').getPublicUrl(filePath);
+  const publicUrl = pub.publicUrl;
+
+  const { error: dbError } = await supabase
+    .from('product_images')
+    .upsert(
+      { category_name: MAIN_CATEGORY_KEY, product_name: categoryName, image_url: publicUrl },
+      { onConflict: 'category_name,product_name' }
+    );
+
+  if (dbError) {
+    const localKey = 'main-category-image-overrides';
+    let overrides: Record<string, string> = {};
+    try {
+      overrides = JSON.parse(localStorage.getItem(localKey) ?? '{}');
+    } catch { overrides = {}; }
+    overrides[categoryName] = publicUrl;
+    localStorage.setItem(localKey, JSON.stringify(overrides));
+  }
+
+  return publicUrl;
+}
+
+export function loadLocalMainCategoryOverrides(): Record<string, string> {
+  try {
+    return JSON.parse(localStorage.getItem('main-category-image-overrides') ?? '{}');
+  } catch {
+    return {};
+  }
+}

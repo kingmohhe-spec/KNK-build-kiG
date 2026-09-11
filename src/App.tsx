@@ -5,7 +5,7 @@ import CreditApplicationForm from './components/CreditApplicationForm';
 import CategoryModal from './components/CategoryModal';
 import ParallaxCard from './components/ParallaxCard';
 import { categoryDetails } from './data/categoryDetails';
-import { fetchCustomImages, resolveImage, fetchBrandImages } from './data/supabaseClient';
+import { fetchCustomImages, resolveImage, fetchBrandImages, fetchMainCategoryImages } from './data/supabaseClient';
 
 
 
@@ -24,6 +24,7 @@ function App() {
   const [selectedCategory, setSelectedCategory] = useState<string | null>(null);
   const [customImages, setCustomImages] = useState<Record<string, string>>({});
   const [brandImages, setBrandImages] = useState<Record<string, string>>({});
+  const [mainCategoryImages, setMainCategoryImages] = useState<Record<string, string>>({});
 
   const supabase = useMemo(() => {
     const url = import.meta.env.VITE_SUPABASE_URL;
@@ -48,6 +49,7 @@ function App() {
   useEffect(() => {
     fetchCustomImages().then(setCustomImages);
     fetchBrandImages().then(setBrandImages);
+    fetchMainCategoryImages().then(setMainCategoryImages);
   }, []);
 
   const handleNewsletterSubmit = async (e: React.FormEvent) => {
@@ -389,7 +391,7 @@ We believe in more than just supplying materials. Our team is built on years of 
                 return (
                   <ParallaxCard
                     key={index}
-                    image={product.image}
+                    image={mainCategoryImages[product.name] ?? product.image}
                     imageHeight={isFeatured ? 'h-64' : 'h-40'}
                   >
                     <div
