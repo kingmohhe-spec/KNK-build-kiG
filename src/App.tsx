@@ -197,7 +197,7 @@ function App() {
     { name: 'MAMBA CEMENT', logo: 'https://images.pexels.com/photos/3681881/pexels-photo-3681881.jpeg?auto=compress&cs=tinysrgb&w=400' },
     { name: 'LIN TANK', logo: 'https://images.pexels.com/photos/3183150/pexels-photo-3183150.jpeg?auto=compress&cs=tinysrgb&w=400' },
     { name: 'MEDAL PAINT', logo: 'https://medalpaints.co.za/wp-content/uploads/2025/01/paint-stroke-medal.webp' },
-    { name: 'GOLDEN CHOICE PAINTS', logo: 'https://images.pexels.com/photos/3945683/pexels-photo-3945683.jpeg?auto=compress&cs=tinysrgb&w=400' },
+    { name: 'ECO-STAR PAINTS', logo: 'https://images.pexels.com/photos/3945683/pexels-photo-3945683.jpeg?auto=compress&cs=tinysrgb&w=400' },
     { name: 'DURAM PAINT', logo: 'https://images.pexels.com/photos/3182812/pexels-photo-3182812.jpeg?auto=compress&cs=tinysrgb&w=400' },
     { name: 'EUREKA', logo: 'https://images.pexels.com/photos/3803517/pexels-photo-3803517.jpeg?auto=compress&cs=tinysrgb&w=400' },
     { name: 'ACADEMY BRUSHWARE', logo: 'https://images.pexels.com/photos/3807517/pexels-photo-3807517.jpeg?auto=compress&cs=tinysrgb&w=400' },
