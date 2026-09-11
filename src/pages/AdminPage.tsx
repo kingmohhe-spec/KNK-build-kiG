@@ -58,40 +58,61 @@ export default function AdminPage() {
 
   async function loadCustomImages() {
     const localOverrides = loadLocalImageOverrides();
-    const { data } = await supabase!.from('product_images').select('category_name, product_name, image_url');
-    const map: Record<string, string> = { ...localOverrides };
-    if (data) {
-      for (const row of data) {
-        map[`${row.category_name}::${row.product_name}`] = row.image_url;
+    try {
+      const { data } = await Promise.race([
+        supabase!.from('product_images').select('category_name, product_name, image_url'),
+        new Promise((_, reject) => setTimeout(() => reject(new Error('timeout')), 8000)),
+      ]);
+      const map: Record<string, string> = { ...localOverrides };
+      if (data) {
+        for (const row of data) {
+          map[`${row.category_name}::${row.product_name}`] = row.image_url;
+        }
       }
+      setCustomImages(map);
+    } catch {
+      setCustomImages(localOverrides);
     }
-    setCustomImages(map);
   }
 
   async function loadMainCategoryImages() {
     const localOverrides = loadLocalMainCategoryOverrides();
-    const { data } = await supabase!.from('product_images')
-      .select('product_name, image_url')
-      .eq('category_name', '__main_category__');
-    const map: Record<string, string> = { ...localOverrides };
-    if (data) {
-      for (const row of data) {
-        map[row.product_name] = row.image_url;
+    try {
+      const { data } = await Promise.race([
+        supabase!.from('product_images')
+          .select('product_name, image_url')
+          .eq('category_name', '__main_category__'),
+        new Promise((_, reject) => setTimeout(() => reject(new Error('timeout')), 8000)),
+      ]);
+      const map: Record<string, string> = { ...localOverrides };
+      if (data) {
+        for (const row of data) {
+          map[row.product_name] = row.image_url;
+        }
       }
+      setMainCategoryImages(map);
+    } catch {
+      setMainCategoryImages(localOverrides);
     }
-    setMainCategoryImages(map);
   }
 
   async function loadBrandImages() {
     const localOverrides = loadLocalBrandOverrides();
-    const { data } = await supabase!.from('brand_images').select('brand_name, image_url');
-    const map: Record<string, string> = { ...localOverrides };
-    if (data) {
-      for (const row of data) {
-        map[row.brand_name] = row.image_url;
+    try {
+      const { data } = await Promise.race([
+        supabase!.from('brand_images').select('brand_name, image_url'),
+        new Promise((_, reject) => setTimeout(() => reject(new Error('timeout')), 8000)),
+      ]);
+      const map: Record<string, string> = { ...localOverrides };
+      if (data) {
+        for (const row of data) {
+          map[row.brand_name] = row.image_url;
+        }
       }
+      setBrandImages(map);
+    } catch {
+      setBrandImages(localOverrides);
     }
-    setBrandImages(map);
   }
 
   function handleLogin(e: React.FormEvent) {

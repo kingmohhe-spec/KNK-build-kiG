@@ -12,18 +12,32 @@ export interface ProductImageRow {
   image_url: string;
 }
 
+function withTimeout<T>(promise: Promise<T>, ms: number): Promise<T> {
+  return Promise.race([
+    promise,
+    new Promise<T>((_, reject) =>
+      setTimeout(() => reject(new Error('timeout')), ms)
+    ),
+  ]);
+}
+
 export async function fetchCustomImages(): Promise<Record<string, string>> {
   const localOverrides = loadLocalImageOverrides();
   if (!supabase) return localOverrides;
-  const { data, error } = await supabase
-    .from('product_images')
-    .select('category_name, product_name, image_url');
-  const map: Record<string, string> = { ...localOverrides };
-  if (error || !data) return map;
-  for (const row of data as ProductImageRow[]) {
-    map[`${row.category_name}::${row.product_name}`] = row.image_url;
+  try {
+    const { data, error } = await withTimeout(
+      supabase.from('product_images').select('category_name, product_name, image_url'),
+      8000
+    );
+    const map: Record<string, string> = { ...localOverrides };
+    if (error || !data) return map;
+    for (const row of data as ProductImageRow[]) {
+      map[`${row.category_name}::${row.product_name}`] = row.image_url;
+    }
+    return map;
+  } catch {
+    return localOverrides;
   }
-  return map;
 }
 
 export function resolveImage(
@@ -34,43 +48,66 @@ export function resolveImage(
   return customImages[`${category}::${product.name}`] ?? product.image;
 }
 
+function fileToDataUrl(file: File): Promise<string> {
+  return new Promise((resolve, reject) => {
+    const reader = new FileReader();
+    reader.onload = () => resolve(reader.result as string);
+    reader.onerror = reject;
+    reader.readAsDataURL(file);
+  });
+}
+
+async function saveLocalOverride(key: string, storageKey: string, dataUrl: string) {
+  let overrides: Record<string, string> = {};
+  try {
+    overrides = JSON.parse(localStorage.getItem(storageKey) ?? '{}');
+  } catch { overrides = {}; }
+  overrides[key] = dataUrl;
+  localStorage.setItem(storageKey, JSON.stringify(overrides));
+}
+
 export async function uploadProductImage(
   category: string,
   product: string,
   file: File
 ): Promise<string | null> {
-  if (!supabase) return null;
+  const localKey = `${category}::${product}`;
+  if (!supabase) {
+    const dataUrl = await fileToDataUrl(file);
+    await saveLocalOverride(localKey, 'product-image-overrides', dataUrl);
+    return dataUrl;
+  }
   const ext = file.name.split('.').pop()?.toLowerCase() ?? 'jpg';
   const safeCat = category.toLowerCase().replace(/[^a-z0-9]/g, '-');
   const safeProd = product.toLowerCase().replace(/[^a-z0-9]/g, '-');
   const filePath = `${safeCat}/${safeProd}-${Date.now()}.${ext}`;
 
-  const { error: uploadError } = await supabase.storage
-    .from('product-images')
-    .upload(filePath, file, { cacheControl: '3600', upsert: true });
-  if (uploadError) return null;
+  try {
+    const { error: uploadError } = await supabase.storage
+      .from('product-images')
+      .upload(filePath, file, { cacheControl: '3600', upsert: true });
+    if (uploadError) throw uploadError;
 
-  const { data: pub } = supabase.storage.from('product-images').getPublicUrl(filePath);
-  const publicUrl = pub.publicUrl;
+    const { data: pub } = supabase.storage.from('product-images').getPublicUrl(filePath);
+    const publicUrl = pub.publicUrl;
 
-  const { error: dbError } = await supabase
-    .from('product_images')
-    .upsert(
-      { category_name: category, product_name: product, image_url: publicUrl },
-      { onConflict: 'category_name,product_name' }
-    );
+    const { error: dbError } = await supabase
+      .from('product_images')
+      .upsert(
+        { category_name: category, product_name: product, image_url: publicUrl },
+        { onConflict: 'category_name,product_name' }
+      );
 
-  if (dbError) {
-    const localKey = 'product-image-overrides';
-    let overrides: Record<string, string> = {};
-    try {
-      overrides = JSON.parse(localStorage.getItem(localKey) ?? '{}');
-    } catch { overrides = {}; }
-    overrides[`${category}::${product}`] = publicUrl;
-    localStorage.setItem(localKey, JSON.stringify(overrides));
+    if (dbError) {
+      await saveLocalOverride(localKey, 'product-image-overrides', publicUrl);
+    }
+
+    return publicUrl;
+  } catch {
+    const dataUrl = await fileToDataUrl(file);
+    await saveLocalOverride(localKey, 'product-image-overrides', dataUrl);
+    return dataUrl;
   }
-
-  return publicUrl;
 }
 
 export function loadLocalImageOverrides(): Record<string, string> {
@@ -89,52 +126,61 @@ export interface BrandImageRow {
 export async function fetchBrandImages(): Promise<Record<string, string>> {
   const localOverrides = loadLocalBrandOverrides();
   if (!supabase) return localOverrides;
-  const { data, error } = await supabase
-    .from('brand_images')
-    .select('brand_name, image_url');
-  const map: Record<string, string> = { ...localOverrides };
-  if (error || !data) return map;
-  for (const row of data as BrandImageRow[]) {
-    map[row.brand_name] = row.image_url;
+  try {
+    const { data, error } = await withTimeout(
+      supabase.from('brand_images').select('brand_name, image_url'),
+      8000
+    );
+    const map: Record<string, string> = { ...localOverrides };
+    if (error || !data) return map;
+    for (const row of data as BrandImageRow[]) {
+      map[row.brand_name] = row.image_url;
+    }
+    return map;
+  } catch {
+    return localOverrides;
   }
-  return map;
 }
 
 export async function uploadBrandImage(
   brandName: string,
   file: File
 ): Promise<string | null> {
-  if (!supabase) return null;
+  if (!supabase) {
+    const dataUrl = await fileToDataUrl(file);
+    await saveLocalOverride(brandName, 'brand-image-overrides', dataUrl);
+    return dataUrl;
+  }
   const ext = file.name.split('.').pop()?.toLowerCase() ?? 'jpg';
   const safeName = brandName.toLowerCase().replace(/[^a-z0-9]/g, '-');
   const filePath = `${safeName}-${Date.now()}.${ext}`;
 
-  const { error: uploadError } = await supabase.storage
-    .from('brand-logos')
-    .upload(filePath, file, { cacheControl: '3600', upsert: true });
-  if (uploadError) return null;
+  try {
+    const { error: uploadError } = await supabase.storage
+      .from('brand-logos')
+      .upload(filePath, file, { cacheControl: '3600', upsert: true });
+    if (uploadError) throw uploadError;
 
-  const { data: pub } = supabase.storage.from('brand-logos').getPublicUrl(filePath);
-  const publicUrl = pub.publicUrl;
+    const { data: pub } = supabase.storage.from('brand-logos').getPublicUrl(filePath);
+    const publicUrl = pub.publicUrl;
 
-  const { error: dbError } = await supabase
-    .from('brand_images')
-    .upsert(
-      { brand_name: brandName, image_url: publicUrl },
-      { onConflict: 'brand_name' }
-    );
+    const { error: dbError } = await supabase
+      .from('brand_images')
+      .upsert(
+        { brand_name: brandName, image_url: publicUrl },
+        { onConflict: 'brand_name' }
+      );
 
-  if (dbError) {
-    const localKey = 'brand-image-overrides';
-    let overrides: Record<string, string> = {};
-    try {
-      overrides = JSON.parse(localStorage.getItem(localKey) ?? '{}');
-    } catch { overrides = {}; }
-    overrides[brandName] = publicUrl;
-    localStorage.setItem(localKey, JSON.stringify(overrides));
+    if (dbError) {
+      await saveLocalOverride(brandName, 'brand-image-overrides', publicUrl);
+    }
+
+    return publicUrl;
+  } catch {
+    const dataUrl = await fileToDataUrl(file);
+    await saveLocalOverride(brandName, 'brand-image-overrides', dataUrl);
+    return dataUrl;
   }
-
-  return publicUrl;
 }
 
 export function loadLocalBrandOverrides(): Record<string, string> {
@@ -150,53 +196,63 @@ const MAIN_CATEGORY_KEY = '__main_category__';
 export async function fetchMainCategoryImages(): Promise<Record<string, string>> {
   const localOverrides = loadLocalMainCategoryOverrides();
   if (!supabase) return localOverrides;
-  const { data, error } = await supabase
-    .from('product_images')
-    .select('product_name, image_url')
-    .eq('category_name', MAIN_CATEGORY_KEY);
-  const map: Record<string, string> = { ...localOverrides };
-  if (error || !data) return map;
-  for (const row of data as Pick<ProductImageRow, 'product_name' | 'image_url'>[]) {
-    map[row.product_name] = row.image_url;
+  try {
+    const { data, error } = await withTimeout(
+      supabase.from('product_images')
+        .select('product_name, image_url')
+        .eq('category_name', MAIN_CATEGORY_KEY),
+      8000
+    );
+    const map: Record<string, string> = { ...localOverrides };
+    if (error || !data) return map;
+    for (const row of data as Pick<ProductImageRow, 'product_name' | 'image_url'>[]) {
+      map[row.product_name] = row.image_url;
+    }
+    return map;
+  } catch {
+    return localOverrides;
   }
-  return map;
 }
 
 export async function uploadMainCategoryImage(
   categoryName: string,
   file: File
 ): Promise<string | null> {
-  if (!supabase) return null;
+  if (!supabase) {
+    const dataUrl = await fileToDataUrl(file);
+    await saveLocalOverride(categoryName, 'main-category-image-overrides', dataUrl);
+    return dataUrl;
+  }
   const ext = file.name.split('.').pop()?.toLowerCase() ?? 'jpg';
   const safeName = categoryName.toLowerCase().replace(/[^a-z0-9]/g, '-');
   const filePath = `main-category/${safeName}-${Date.now()}.${ext}`;
 
-  const { error: uploadError } = await supabase.storage
-    .from('product-images')
-    .upload(filePath, file, { cacheControl: '3600', upsert: true });
-  if (uploadError) return null;
+  try {
+    const { error: uploadError } = await supabase.storage
+      .from('product-images')
+      .upload(filePath, file, { cacheControl: '3600', upsert: true });
+    if (uploadError) throw uploadError;
 
-  const { data: pub } = supabase.storage.from('product-images').getPublicUrl(filePath);
-  const publicUrl = pub.publicUrl;
+    const { data: pub } = supabase.storage.from('product-images').getPublicUrl(filePath);
+    const publicUrl = pub.publicUrl;
 
-  const { error: dbError } = await supabase
-    .from('product_images')
-    .upsert(
-      { category_name: MAIN_CATEGORY_KEY, product_name: categoryName, image_url: publicUrl },
-      { onConflict: 'category_name,product_name' }
-    );
+    const { error: dbError } = await supabase
+      .from('product_images')
+      .upsert(
+        { category_name: MAIN_CATEGORY_KEY, product_name: categoryName, image_url: publicUrl },
+        { onConflict: 'category_name,product_name' }
+      );
 
-  if (dbError) {
-    const localKey = 'main-category-image-overrides';
-    let overrides: Record<string, string> = {};
-    try {
-      overrides = JSON.parse(localStorage.getItem(localKey) ?? '{}');
-    } catch { overrides = {}; }
-    overrides[categoryName] = publicUrl;
-    localStorage.setItem(localKey, JSON.stringify(overrides));
+    if (dbError) {
+      await saveLocalOverride(categoryName, 'main-category-image-overrides', publicUrl);
+    }
+
+    return publicUrl;
+  } catch {
+    const dataUrl = await fileToDataUrl(file);
+    await saveLocalOverride(categoryName, 'main-category-image-overrides', dataUrl);
+    return dataUrl;
   }
-
-  return publicUrl;
 }
 
 export function loadLocalMainCategoryOverrides(): Record<string, string> {
