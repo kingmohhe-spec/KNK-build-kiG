@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react';
 import { supabase } from '../data/supabaseClient';
 import { categoryDetails } from '../data/categoryDetails';
 import { uploadProductImage, uploadBrandImage, uploadMainCategoryImage, loadLocalImageOverrides, loadLocalBrandOverrides, loadLocalMainCategoryOverrides } from '../data/supabaseClient';
+import type { UploadResult } from '../data/supabaseClient';
 import { Lock, Upload, Check, LogOut, Loader2, Image, Award, Layers } from 'lucide-react';
 
 const ADMIN_PASSWORD = 'BuildBase2025!';
@@ -137,11 +138,14 @@ export default function AdminPage() {
     const key = `${category}::${product}`;
     setUploadingKey(key);
     try {
-      const url = await uploadProductImage(category, product, file);
-      if (url) {
-        setCustomImages((prev) => ({ ...prev, [key]: url }));
-        setUploadMessage((prev) => ({ ...prev, [key]: 'Image updated!' }));
-        setTimeout(() => setUploadMessage((prev) => { const n = { ...prev }; delete n[key]; return n; }), 3000);
+      const result: UploadResult = await uploadProductImage(category, product, file);
+      if (result.url) {
+        setCustomImages((prev) => ({ ...prev, [key]: result.url! }));
+        const msg = result.error
+          ? `Saved locally only: ${result.error}`
+          : 'Image updated!';
+        setUploadMessage((prev) => ({ ...prev, [key]: msg }));
+        setTimeout(() => setUploadMessage((prev) => { const n = { ...prev }; delete n[key]; return n; }), 5000);
       } else {
         setUploadMessage((prev) => ({ ...prev, [key]: 'Upload failed. Try again.' }));
       }
@@ -156,11 +160,14 @@ export default function AdminPage() {
     const key = `maincat::${categoryName}`;
     setUploadingKey(key);
     try {
-      const url = await uploadMainCategoryImage(categoryName, file);
-      if (url) {
-        setMainCategoryImages((prev) => ({ ...prev, [categoryName]: url }));
-        setUploadMessage((prev) => ({ ...prev, [key]: 'Image updated!' }));
-        setTimeout(() => setUploadMessage((prev) => { const n = { ...prev }; delete n[key]; return n; }), 3000);
+      const result: UploadResult = await uploadMainCategoryImage(categoryName, file);
+      if (result.url) {
+        setMainCategoryImages((prev) => ({ ...prev, [categoryName]: result.url! }));
+        const msg = result.error
+          ? `Saved locally only: ${result.error}`
+          : 'Image updated!';
+        setUploadMessage((prev) => ({ ...prev, [key]: msg }));
+        setTimeout(() => setUploadMessage((prev) => { const n = { ...prev }; delete n[key]; return n; }), 5000);
       } else {
         setUploadMessage((prev) => ({ ...prev, [key]: 'Upload failed. Try again.' }));
       }
@@ -175,11 +182,14 @@ export default function AdminPage() {
     const key = `brand::${brandName}`;
     setUploadingKey(key);
     try {
-      const url = await uploadBrandImage(brandName, file);
-      if (url) {
-        setBrandImages((prev) => ({ ...prev, [brandName]: url }));
-        setUploadMessage((prev) => ({ ...prev, [key]: 'Logo updated!' }));
-        setTimeout(() => setUploadMessage((prev) => { const n = { ...prev }; delete n[key]; return n; }), 3000);
+      const result: UploadResult = await uploadBrandImage(brandName, file);
+      if (result.url) {
+        setBrandImages((prev) => ({ ...prev, [brandName]: result.url! }));
+        const msg = result.error
+          ? `Saved locally only: ${result.error}`
+          : 'Logo updated!';
+        setUploadMessage((prev) => ({ ...prev, [key]: msg }));
+        setTimeout(() => setUploadMessage((prev) => { const n = { ...prev }; delete n[key]; return n; }), 5000);
       } else {
         setUploadMessage((prev) => ({ ...prev, [key]: 'Upload failed. Try again.' }));
       }
@@ -302,7 +312,7 @@ export default function AdminPage() {
                             />
                           </label>
                           {uploadMessage[key] && (
-                            <p className={`text-xs mt-2 flex items-center gap-1 ${uploadMessage[key].includes('updated') ? 'text-green-600' : 'text-red-500'}`}>
+                            <p className={`text-xs mt-2 flex items-center gap-1 ${uploadMessage[key].includes('updated') ? 'text-green-600' : uploadMessage[key].includes('locally') ? 'text-amber-600' : 'text-red-500'}`}>
                               {uploadMessage[key].includes('updated') && <Check className="h-3 w-3" />}
                               {uploadMessage[key]}
                             </p>
@@ -355,7 +365,7 @@ export default function AdminPage() {
                         />
                       </label>
                       {uploadMessage[key] && (
-                        <p className={`text-xs mt-2 flex items-center gap-1 ${uploadMessage[key].includes('updated') ? 'text-green-600' : 'text-red-500'}`}>
+                        <p className={`text-xs mt-2 flex items-center gap-1 ${uploadMessage[key].includes('updated') ? 'text-green-600' : uploadMessage[key].includes('locally') ? 'text-amber-600' : 'text-red-500'}`}>
                           {uploadMessage[key].includes('updated') && <Check className="h-3 w-3" />}
                           {uploadMessage[key]}
                         </p>
@@ -406,7 +416,7 @@ export default function AdminPage() {
                         />
                       </label>
                       {uploadMessage[key] && (
-                        <p className={`text-xs mt-2 flex items-center gap-1 ${uploadMessage[key].includes('updated') ? 'text-green-600' : 'text-red-500'}`}>
+                        <p className={`text-xs mt-2 flex items-center gap-1 ${uploadMessage[key].includes('updated') ? 'text-green-600' : uploadMessage[key].includes('locally') ? 'text-amber-600' : 'text-red-500'}`}>
                           {uploadMessage[key].includes('updated') && <Check className="h-3 w-3" />}
                           {uploadMessage[key]}
                         </p>

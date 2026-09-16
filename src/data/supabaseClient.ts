@@ -12,6 +12,12 @@ export interface ProductImageRow {
   image_url: string;
 }
 
+export interface UploadResult {
+  url: string | null;
+  error: string | null;
+  isLocal: boolean;
+}
+
 function withTimeout<T>(promise: Promise<T>, ms: number): Promise<T> {
   return Promise.race([
     promise,
@@ -19,6 +25,24 @@ function withTimeout<T>(promise: Promise<T>, ms: number): Promise<T> {
       setTimeout(() => reject(new Error('timeout')), ms)
     ),
   ]);
+}
+
+function fileToDataUrl(file: File): Promise<string> {
+  return new Promise((resolve, reject) => {
+    const reader = new FileReader();
+    reader.onload = () => resolve(reader.result as string);
+    reader.onerror = reject;
+    reader.readAsDataURL(file);
+  });
+}
+
+async function saveLocalOverride(mapKey: string, storageKey: string, dataUrl: string) {
+  let overrides: Record<string, string> = {};
+  try {
+    overrides = JSON.parse(localStorage.getItem(storageKey) ?? '{}');
+  } catch { overrides = {}; }
+  overrides[mapKey] = dataUrl;
+  localStorage.setItem(storageKey, JSON.stringify(overrides));
 }
 
 export async function fetchCustomImages(): Promise<Record<string, string>> {
@@ -48,34 +72,16 @@ export function resolveImage(
   return customImages[`${category}::${product.name}`] ?? product.image;
 }
 
-function fileToDataUrl(file: File): Promise<string> {
-  return new Promise((resolve, reject) => {
-    const reader = new FileReader();
-    reader.onload = () => resolve(reader.result as string);
-    reader.onerror = reject;
-    reader.readAsDataURL(file);
-  });
-}
-
-async function saveLocalOverride(key: string, storageKey: string, dataUrl: string) {
-  let overrides: Record<string, string> = {};
-  try {
-    overrides = JSON.parse(localStorage.getItem(storageKey) ?? '{}');
-  } catch { overrides = {}; }
-  overrides[key] = dataUrl;
-  localStorage.setItem(storageKey, JSON.stringify(overrides));
-}
-
 export async function uploadProductImage(
   category: string,
   product: string,
   file: File
-): Promise<string | null> {
+): Promise<UploadResult> {
   const localKey = `${category}::${product}`;
   if (!supabase) {
     const dataUrl = await fileToDataUrl(file);
     await saveLocalOverride(localKey, 'product-image-overrides', dataUrl);
-    return dataUrl;
+    return { url: dataUrl, error: null, isLocal: true };
   }
   const ext = file.name.split('.').pop()?.toLowerCase() ?? 'jpg';
   const safeCat = category.toLowerCase().replace(/[^a-z0-9]/g, '-');
@@ -98,15 +104,14 @@ export async function uploadProductImage(
         { onConflict: 'category_name,product_name' }
       );
 
-    if (dbError) {
-      await saveLocalOverride(localKey, 'product-image-overrides', publicUrl);
-    }
+    if (dbError) throw dbError;
 
-    return publicUrl;
-  } catch {
+    return { url: publicUrl, error: null, isLocal: false };
+  } catch (err) {
+    const msg = err instanceof Error ? err.message : 'Upload failed';
     const dataUrl = await fileToDataUrl(file);
     await saveLocalOverride(localKey, 'product-image-overrides', dataUrl);
-    return dataUrl;
+    return { url: dataUrl, error: msg, isLocal: true };
   }
 }
 
@@ -145,11 +150,11 @@ export async function fetchBrandImages(): Promise<Record<string, string>> {
 export async function uploadBrandImage(
   brandName: string,
   file: File
-): Promise<string | null> {
+): Promise<UploadResult> {
   if (!supabase) {
     const dataUrl = await fileToDataUrl(file);
     await saveLocalOverride(brandName, 'brand-image-overrides', dataUrl);
-    return dataUrl;
+    return { url: dataUrl, error: null, isLocal: true };
   }
   const ext = file.name.split('.').pop()?.toLowerCase() ?? 'jpg';
   const safeName = brandName.toLowerCase().replace(/[^a-z0-9]/g, '-');
@@ -171,15 +176,14 @@ export async function uploadBrandImage(
         { onConflict: 'brand_name' }
       );
 
-    if (dbError) {
-      await saveLocalOverride(brandName, 'brand-image-overrides', publicUrl);
-    }
+    if (dbError) throw dbError;
 
-    return publicUrl;
-  } catch {
+    return { url: publicUrl, error: null, isLocal: false };
+  } catch (err) {
+    const msg = err instanceof Error ? err.message : 'Upload failed';
     const dataUrl = await fileToDataUrl(file);
     await saveLocalOverride(brandName, 'brand-image-overrides', dataUrl);
-    return dataUrl;
+    return { url: dataUrl, error: msg, isLocal: true };
   }
 }
 
@@ -217,11 +221,11 @@ export async function fetchMainCategoryImages(): Promise<Record<string, string>>
 export async function uploadMainCategoryImage(
   categoryName: string,
   file: File
-): Promise<string | null> {
+): Promise<UploadResult> {
   if (!supabase) {
     const dataUrl = await fileToDataUrl(file);
     await saveLocalOverride(categoryName, 'main-category-image-overrides', dataUrl);
-    return dataUrl;
+    return { url: dataUrl, error: null, isLocal: true };
   }
   const ext = file.name.split('.').pop()?.toLowerCase() ?? 'jpg';
   const safeName = categoryName.toLowerCase().replace(/[^a-z0-9]/g, '-');
@@ -243,15 +247,14 @@ export async function uploadMainCategoryImage(
         { onConflict: 'category_name,product_name' }
       );
 
-    if (dbError) {
-      await saveLocalOverride(categoryName, 'main-category-image-overrides', publicUrl);
-    }
+    if (dbError) throw dbError;
 
-    return publicUrl;
-  } catch {
+    return { url: publicUrl, error: null, isLocal: false };
+  } catch (err) {
+    const msg = err instanceof Error ? err.message : 'Upload failed';
     const dataUrl = await fileToDataUrl(file);
     await saveLocalOverride(categoryName, 'main-category-image-overrides', dataUrl);
-    return dataUrl;
+    return { url: dataUrl, error: msg, isLocal: true };
   }
 }
 
