@@ -622,7 +622,7 @@ We believe in more than just supplying materials. Our team is built on years of 
                 },
                 {
                   title: 'Email Us',
-                  info: 'knkbuildersmarketing@gmail.com',
+                  info: 'marketing@knkbuilders.co.za',
                   subinfo: 'We reply within 24 hours'
                 }
               ].map((contact, index) => (
