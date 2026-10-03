@@ -2,8 +2,9 @@ import { useState, useEffect } from 'react';
 import { supabase } from '../data/supabaseClient';
 import { categoryDetails } from '../data/categoryDetails';
 import { uploadProductImage, uploadBrandImage, uploadMainCategoryImage, loadLocalImageOverrides, loadLocalBrandOverrides, loadLocalMainCategoryOverrides } from '../data/supabaseClient';
-import type { UploadResult } from '../data/supabaseClient';
-import { Lock, Upload, Check, LogOut, Loader2, Image, Award, Layers } from 'lucide-react';
+import { fetchAllPromotions, createPromotion, updatePromotion, deletePromotion, uploadPromotionImage } from '../data/supabaseClient';
+import type { UploadResult, Promotion } from '../data/supabaseClient';
+import { Lock, Upload, Check, LogOut, Loader2, Image, Award, Layers, Tag, Trash2, Plus, ToggleLeft, ToggleRight, X } from 'lucide-react';
 
 const ADMIN_PASSWORD = 'BuildBase2025!';
 const SESSION_KEY = 'admin-authed';
@@ -38,12 +39,20 @@ export default function AdminPage() {
   const [authError, setAuthError] = useState('');
   const [loading, setLoading] = useState(false);
   const [authed, setAuthed] = useState<boolean>(false);
-  const [tab, setTab] = useState<'products' | 'brands' | 'categories'>('products');
+  const [tab, setTab] = useState<'products' | 'brands' | 'categories' | 'promotions'>('products');
   const [customImages, setCustomImages] = useState<Record<string, string>>({});
   const [brandImages, setBrandImages] = useState<Record<string, string>>({});
   const [mainCategoryImages, setMainCategoryImages] = useState<Record<string, string>>({});
   const [uploadingKey, setUploadingKey] = useState<string | null>(null);
   const [uploadMessage, setUploadMessage] = useState<Record<string, string>>({});
+
+  const [promotions, setPromotions] = useState<Promotion[]>([]);
+  const [promoLoading, setPromoLoading] = useState(false);
+  const [promoForm, setPromoForm] = useState({ title: '', description: '', imageUrl: '' as string | null });
+  const [promoUploading, setPromoUploading] = useState(false);
+  const [promoError, setPromoError] = useState('');
+  const [promoSuccess, setPromoSuccess] = useState('');
+  const [editingPromoId, setEditingPromoId] = useState<string | null>(null);
 
   useEffect(() => {
     setAuthed(sessionStorage.getItem(SESSION_KEY) === '1');
@@ -54,6 +63,7 @@ export default function AdminPage() {
       loadCustomImages();
       loadBrandImages();
       loadMainCategoryImages();
+      loadPromotions();
     }
   }, [authed]);
 
@@ -113,6 +123,18 @@ export default function AdminPage() {
       setBrandImages(map);
     } catch {
       setBrandImages(localOverrides);
+    }
+  }
+
+  async function loadPromotions() {
+    setPromoLoading(true);
+    try {
+      const data = await fetchAllPromotions();
+      setPromotions(data);
+    } catch {
+      setPromotions([]);
+    } finally {
+      setPromoLoading(false);
     }
   }
 
@@ -200,6 +222,109 @@ export default function AdminPage() {
     }
   }
 
+  async function handlePromoImageUpload(file: File) {
+    setPromoUploading(true);
+    setPromoError('');
+    try {
+      const result = await uploadPromotionImage(file);
+      if (result.url) {
+        setPromoForm((prev) => ({ ...prev, imageUrl: result.url }));
+        if (result.error) {
+          setPromoError(`Image saved locally only: ${result.error}`);
+        }
+      } else {
+        setPromoError('Image upload failed. Try again.');
+      }
+    } catch {
+      setPromoError('Image upload failed. Try again.');
+    } finally {
+      setPromoUploading(false);
+    }
+  }
+
+  async function handlePromoSubmit(e: React.FormEvent) {
+    e.preventDefault();
+    setPromoError('');
+    setPromoSuccess('');
+
+    if (!promoForm.title.trim() || !promoForm.description.trim()) {
+      setPromoError('Title and description are required.');
+      return;
+    }
+
+    setPromoLoading(true);
+    try {
+      if (editingPromoId) {
+        const ok = await updatePromotion(editingPromoId, {
+          title: promoForm.title.trim(),
+          description: promoForm.description.trim(),
+          image_url: promoForm.imageUrl || null,
+        });
+        if (!ok) {
+          setPromoError('Failed to update promotion. Try again.');
+        } else {
+          setPromoSuccess('Promotion updated!');
+          resetPromoForm();
+          await loadPromotions();
+        }
+      } else {
+        const maxOrder = promotions.length > 0
+          ? Math.max(...promotions.map(p => p.display_order))
+          : 0;
+        const created = await createPromotion(
+          promoForm.title.trim(),
+          promoForm.description.trim(),
+          promoForm.imageUrl || null,
+          maxOrder + 1
+        );
+        if (!created) {
+          setPromoError('Failed to create promotion. Try again.');
+        } else {
+          setPromoSuccess('Promotion added!');
+          resetPromoForm();
+          await loadPromotions();
+        }
+      }
+    } catch {
+      setPromoError('Something went wrong. Try again.');
+    } finally {
+      setPromoLoading(false);
+      setTimeout(() => { setPromoSuccess(''); setPromoError(''); }, 4000);
+    }
+  }
+
+  function resetPromoForm() {
+    setPromoForm({ title: '', description: '', imageUrl: null });
+    setEditingPromoId(null);
+  }
+
+  function handleEditPromo(promo: Promotion) {
+    setPromoForm({
+      title: promo.title,
+      description: promo.description,
+      imageUrl: promo.image_url,
+    });
+    setEditingPromoId(promo.id);
+    setPromoError('');
+    setPromoSuccess('');
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+  }
+
+  async function handleTogglePromo(promo: Promotion) {
+    const ok = await updatePromotion(promo.id, { is_active: !promo.is_active });
+    if (ok) {
+      await loadPromotions();
+    }
+  }
+
+  async function handleDeletePromo(promo: Promotion) {
+    if (!confirm(`Delete "${promo.title}"? This cannot be undone.`)) return;
+    const ok = await deletePromotion(promo.id);
+    if (ok) {
+      await loadPromotions();
+    }
+  }
+
   if (!authed) {
     return (
       <div className="min-h-screen bg-gradient-to-br from-slate-950 via-blue-950 to-slate-900 flex items-center justify-center p-4">
@@ -210,7 +335,7 @@ export default function AdminPage() {
             </div>
           </div>
           <h1 className="text-2xl font-bold text-gray-900 text-center mb-2">Admin Login</h1>
-          <p className="text-gray-500 text-center mb-8 text-sm">Sign in to manage product images and brand logos</p>
+          <p className="text-gray-500 text-center mb-8 text-sm">Sign in to manage product images, brand logos, and promotions</p>
           <form onSubmit={handleLogin} className="space-y-4">
             <input
               type="password"
@@ -231,7 +356,7 @@ export default function AdminPage() {
             </button>
           </form>
           <a href="#" className="block text-center mt-6 text-sm text-gray-500 hover:text-orange-600 transition-colors">
-            ← Back to website
+            &larr; Back to website
           </a>
         </div>
       </div>
@@ -253,7 +378,7 @@ export default function AdminPage() {
       </header>
 
       <div className="container mx-auto px-6 py-8 max-w-6xl">
-        <div className="flex gap-2 mb-8">
+        <div className="flex gap-2 mb-8 flex-wrap">
           <button
             onClick={() => setTab('products')}
             className={`flex items-center gap-2 px-5 py-2.5 rounded-lg font-medium text-sm transition-all ${tab === 'products' ? 'bg-orange-500 text-white shadow-md' : 'bg-white text-gray-600 border border-gray-200 hover:border-orange-300'}`}
@@ -271,6 +396,12 @@ export default function AdminPage() {
             className={`flex items-center gap-2 px-5 py-2.5 rounded-lg font-medium text-sm transition-all ${tab === 'categories' ? 'bg-orange-500 text-white shadow-md' : 'bg-white text-gray-600 border border-gray-200 hover:border-orange-300'}`}
           >
             <Layers className="h-4 w-4" /> Main Categories
+          </button>
+          <button
+            onClick={() => setTab('promotions')}
+            className={`flex items-center gap-2 px-5 py-2.5 rounded-lg font-medium text-sm transition-all ${tab === 'promotions' ? 'bg-orange-500 text-white shadow-md' : 'bg-white text-gray-600 border border-gray-200 hover:border-orange-300'}`}
+          >
+            <Tag className="h-4 w-4" /> Promotions
           </button>
         </div>
 
@@ -425,6 +556,147 @@ export default function AdminPage() {
                   </div>
                 );
               })}
+            </div>
+          </>
+        )}
+
+        {tab === 'promotions' && (
+          <>
+            <div className="bg-white rounded-2xl shadow-md border border-gray-100 p-6 mb-8">
+              <div className="flex items-center justify-between mb-4">
+                <h2 className="text-lg font-bold text-gray-900">
+                  {editingPromoId ? 'Edit Promotion' : 'Add New Promotion'}
+                </h2>
+                {editingPromoId && (
+                  <button
+                    onClick={resetPromoForm}
+                    className="text-gray-500 hover:text-gray-700 flex items-center gap-1 text-sm"
+                  >
+                    <X className="h-4 w-4" /> Cancel edit
+                  </button>
+                )}
+              </div>
+              <form onSubmit={handlePromoSubmit} className="space-y-4">
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">Title</label>
+                  <input
+                    type="text"
+                    value={promoForm.title}
+                    onChange={(e) => setPromoForm(prev => ({ ...prev, title: e.target.value }))}
+                    placeholder="e.g. 20% Off All Cement This Month"
+                    className="w-full border border-gray-200 rounded-lg px-4 py-2.5 text-gray-900 focus:outline-none focus:border-orange-400 focus:ring-1 focus:ring-orange-400"
+                    required
+                  />
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">Description</label>
+                  <textarea
+                    value={promoForm.description}
+                    onChange={(e) => setPromoForm(prev => ({ ...prev, description: e.target.value }))}
+                    placeholder="Describe the special offer..."
+                    rows={3}
+                    className="w-full border border-gray-200 rounded-lg px-4 py-2.5 text-gray-900 focus:outline-none focus:border-orange-400 focus:ring-1 focus:ring-orange-400 resize-none"
+                    required
+                  />
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">Promotion Image (optional)</label>
+                  {promoForm.imageUrl && (
+                    <div className="mb-2 relative inline-block">
+                      <img src={promoForm.imageUrl} alt="Preview" className="h-32 rounded-lg border border-gray-200 object-cover" />
+                      <button
+                        type="button"
+                        onClick={() => setPromoForm(prev => ({ ...prev, imageUrl: null }))}
+                        className="absolute -top-2 -right-2 bg-red-500 text-white rounded-full p-1 hover:bg-red-600 transition-colors"
+                      >
+                        <X className="h-3 w-3" />
+                      </button>
+                    </div>
+                  )}
+                  <label className={`flex items-center justify-center gap-2 w-full border border-gray-200 rounded-lg py-2 text-sm font-medium cursor-pointer transition-all ${promoUploading ? 'opacity-50 cursor-wait' : 'hover:border-orange-400 hover:text-orange-600'}`}>
+                    {promoUploading ? (
+                      <><Loader2 className="h-4 w-4 animate-spin" /> Uploading...</>
+                    ) : (
+                      <><Upload className="h-4 w-4" /> {promoForm.imageUrl ? 'Change image' : 'Upload image'}</>
+                    )}
+                    <input
+                      type="file"
+                      accept="image/*"
+                      className="hidden"
+                      disabled={promoUploading}
+                      onChange={(e) => {
+                        const file = e.target.files?.[0];
+                        if (file) handlePromoImageUpload(file);
+                        e.target.value = '';
+                      }}
+                    />
+                  </label>
+                </div>
+                {promoError && <p className="text-sm text-red-500">{promoError}</p>}
+                {promoSuccess && <p className="text-sm text-green-600 flex items-center gap-1"><Check className="h-4 w-4" /> {promoSuccess}</p>}
+                <button
+                  type="submit"
+                  disabled={promoLoading}
+                  className="flex items-center gap-2 bg-gradient-to-r from-orange-500 to-orange-600 text-white px-6 py-2.5 rounded-lg font-semibold hover:from-orange-600 hover:to-orange-700 transition-all disabled:opacity-50"
+                >
+                  {promoLoading ? <Loader2 className="h-4 w-4 animate-spin" /> : <Plus className="h-4 w-4" />}
+                  {editingPromoId ? 'Update Promotion' : 'Add Promotion'}
+                </button>
+              </form>
+            </div>
+
+            <div className="mb-4">
+              <h2 className="text-lg font-bold text-gray-900">Existing Promotions</h2>
+              <p className="text-sm text-gray-500">Toggle promotions on or off, edit details, or delete.</p>
+            </div>
+
+            {promotions.length === 0 && !promoLoading && (
+              <div className="bg-white rounded-2xl shadow-sm border border-gray-100 p-8 text-center text-gray-500">
+                No promotions yet. Add your first one above.
+              </div>
+            )}
+
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
+              {promotions.map((promo) => (
+                <div key={promo.id} className={`bg-white rounded-2xl shadow-md border overflow-hidden ${promo.is_active ? 'border-orange-100' : 'border-gray-200 opacity-60'}`}>
+                  {promo.image_url && (
+                    <div className="h-32 overflow-hidden bg-gray-100">
+                      <img src={promo.image_url} alt={promo.title} className="w-full h-full object-cover" />
+                    </div>
+                  )}
+                  <div className="p-4">
+                    <div className="flex items-start justify-between gap-2 mb-2">
+                      <h3 className="font-bold text-gray-900 text-sm">{promo.title}</h3>
+                      <span className={`text-xs font-semibold px-2 py-0.5 rounded-full flex-shrink-0 ${promo.is_active ? 'bg-green-100 text-green-700' : 'bg-gray-200 text-gray-500'}`}>
+                        {promo.is_active ? 'Active' : 'Hidden'}
+                      </span>
+                    </div>
+                    <p className="text-gray-500 text-xs mb-3 line-clamp-3">{promo.description}</p>
+                    <div className="flex items-center gap-2">
+                      <button
+                        onClick={() => handleTogglePromo(promo)}
+                        className="flex items-center gap-1 text-xs font-medium text-gray-600 hover:text-orange-600 transition-colors px-2 py-1 rounded hover:bg-orange-50"
+                        title={promo.is_active ? 'Hide promotion' : 'Show promotion'}
+                      >
+                        {promo.is_active ? <ToggleRight className="h-5 w-5 text-green-600" /> : <ToggleLeft className="h-5 w-5" />}
+                        {promo.is_active ? 'Active' : 'Hidden'}
+                      </button>
+                      <button
+                        onClick={() => handleEditPromo(promo)}
+                        className="flex items-center gap-1 text-xs font-medium text-blue-600 hover:text-blue-700 transition-colors px-2 py-1 rounded hover:bg-blue-50"
+                      >
+                        Edit
+                      </button>
+                      <button
+                        onClick={() => handleDeletePromo(promo)}
+                        className="flex items-center gap-1 text-xs font-medium text-red-500 hover:text-red-600 transition-colors px-2 py-1 rounded hover:bg-red-50 ml-auto"
+                      >
+                        <Trash2 className="h-4 w-4" />
+                      </button>
+                    </div>
+                  </div>
+                </div>
+              ))}
             </div>
           </>
         )}

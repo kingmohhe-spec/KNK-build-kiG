@@ -1,11 +1,12 @@
-import { Hammer, Users, MapPin, Phone, Mail, Clock, Award, Shield, TrendingUp, Package, Wrench, ChevronRight, Star, Layers, Lock, Leaf, Send, FileText, ShoppingCart } from 'lucide-react';
+import { Hammer, Users, MapPin, Phone, Mail, Clock, Award, Shield, TrendingUp, Package, Wrench, ChevronRight, Star, Layers, Lock, Leaf, Send, FileText, ShoppingCart, Tag } from 'lucide-react';
 import { useState, useEffect, useMemo } from 'react';
 import { createClient } from '@supabase/supabase-js';
 import CreditApplicationForm from './components/CreditApplicationForm';
 import CategoryModal from './components/CategoryModal';
 import ParallaxCard from './components/ParallaxCard';
 import { categoryDetails } from './data/categoryDetails';
-import { fetchCustomImages, resolveImage, fetchBrandImages, fetchMainCategoryImages } from './data/supabaseClient';
+import { fetchCustomImages, resolveImage, fetchBrandImages, fetchMainCategoryImages, fetchPromotions } from './data/supabaseClient';
+import type { Promotion } from './data/supabaseClient';
 
 
 
@@ -25,6 +26,7 @@ function App() {
   const [customImages, setCustomImages] = useState<Record<string, string>>({});
   const [brandImages, setBrandImages] = useState<Record<string, string>>({});
   const [mainCategoryImages, setMainCategoryImages] = useState<Record<string, string>>({});
+  const [promotions, setPromotions] = useState<Promotion[]>([]);
 
   const supabase = useMemo(() => {
     const url = import.meta.env.VITE_SUPABASE_URL;
@@ -50,6 +52,7 @@ function App() {
     fetchCustomImages().then(setCustomImages);
     fetchBrandImages().then(setBrandImages);
     fetchMainCategoryImages().then(setMainCategoryImages);
+    fetchPromotions().then(setPromotions);
   }, []);
 
   const handleNewsletterSubmit = async (e: React.FormEvent) => {
@@ -224,6 +227,15 @@ function App() {
             <div className="hidden md:flex items-center space-x-8">
               <a href="#about" className={`transition-colors hover:text-blue-600 ${scrolled ? 'text-gray-700' : 'text-white'}`}>About</a>
               <a href="#services" className={`transition-colors hover:text-blue-600 ${scrolled ? 'text-gray-700' : 'text-white'}`}>Services</a>
+              <a href="#promotions" className={`relative transition-colors hover:text-orange-500 ${scrolled ? 'text-gray-700' : 'text-white'} flex items-center gap-1`}>
+                <Tag className="h-4 w-4" />
+                Promotions
+                {promotions.length > 0 && (
+                  <span className="absolute -top-2 -right-3 bg-gradient-to-r from-orange-500 to-orange-600 text-white text-xs font-bold rounded-full h-5 w-5 flex items-center justify-center">
+                    {promotions.length}
+                  </span>
+                )}
+              </a>
               <a href="#locations" className={`transition-colors hover:text-blue-600 ${scrolled ? 'text-gray-700' : 'text-white'}`}>Locations</a>
               <button className={`relative transition-colors hover:text-orange-500 ${scrolled ? 'text-gray-700' : 'text-white'}`}>
                 <ShoppingCart className="h-6 w-6" />
@@ -297,6 +309,64 @@ function App() {
 
         <div className="absolute bottom-0 left-0 right-0 h-32 bg-gradient-to-t from-white to-transparent"></div>
       </section>
+
+      {promotions.length > 0 && (
+        <section id="promotions" className="py-20 bg-gradient-to-br from-orange-50 via-white to-blue-50 overflow-hidden">
+          <div className="absolute inset-0 opacity-30" style={{backgroundImage: "radial-gradient(circle, rgba(251,146,60,.08) 1px, transparent 1px)", backgroundSize: "30px 30px"}}></div>
+          <div className="container mx-auto px-6 relative z-10">
+            <div className="text-center mb-12">
+              <div className="inline-block mb-4">
+                <span className="bg-orange-100 text-orange-600 px-4 py-2 rounded-full text-sm font-semibold flex items-center gap-2">
+                  <Tag className="h-4 w-4" /> Current Specials
+                </span>
+              </div>
+              <h2 className="text-4xl md:text-5xl font-bold text-gray-900 mb-4">
+                Promotions & Special Offers
+              </h2>
+              <p className="text-xl text-gray-600 max-w-2xl mx-auto">
+                Check out our latest deals and save more on quality building materials
+              </p>
+            </div>
+
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 max-w-7xl mx-auto">
+              {promotions.map((promo, index) => (
+                <div
+                  key={promo.id}
+                  className="group relative bg-white rounded-2xl shadow-lg hover:shadow-2xl transition-all duration-500 border border-orange-100 hover:border-orange-300 transform hover:-translate-y-2 overflow-hidden"
+                >
+                  {promo.image_url && (
+                    <div className="h-48 overflow-hidden bg-gray-100 relative">
+                      <img
+                        src={promo.image_url}
+                        alt={promo.title}
+                        className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-500"
+                      />
+                      <div className="absolute top-3 left-3 bg-gradient-to-r from-orange-500 to-orange-600 text-white text-xs font-bold px-3 py-1.5 rounded-full shadow-lg flex items-center gap-1">
+                        <Tag className="h-3 w-3" /> Special
+                      </div>
+                    </div>
+                  )}
+                  <div className="p-6">
+                    <h3 className="text-xl font-bold text-gray-900 mb-2">{promo.title}</h3>
+                    <p className="text-gray-600 leading-relaxed">{promo.description}</p>
+                  </div>
+                  <div className="absolute top-0 right-0 w-20 h-20 bg-orange-500/10 rounded-full -mr-10 -mt-10 group-hover:scale-150 transition-transform duration-500"></div>
+                </div>
+              ))}
+            </div>
+
+            <div className="text-center mt-10">
+              <a
+                href="#contact"
+                className="inline-flex items-center gap-2 bg-gradient-to-r from-orange-500 to-orange-600 text-white px-8 py-3 rounded-lg font-semibold hover:from-orange-600 hover:to-orange-700 transition-all transform hover:scale-105 shadow-lg"
+              >
+                Enquire about these specials
+                <ChevronRight className="h-5 w-5" />
+              </a>
+            </div>
+          </div>
+        </section>
+      )}
 
       <section id="about" className="py-24 bg-white">
         <div className="container mx-auto px-6">
@@ -810,6 +880,7 @@ We believe in more than just supplying materials. Our team is built on years of 
               <ul className="space-y-2 text-gray-400">
                 <li><a href="#about" className="hover:text-orange-400 transition-colors duration-300 flex items-center gap-2"><span className="text-orange-500">→</span> About Us</a></li>
                 <li><a href="#services" className="hover:text-orange-400 transition-colors duration-300 flex items-center gap-2"><span className="text-orange-500">→</span> Services</a></li>
+                <li><a href="#promotions" className="hover:text-orange-400 transition-colors duration-300 flex items-center gap-2"><span className="text-orange-500">→</span> Promotions</a></li>
                 <li><a href="#locations" className="hover:text-orange-400 transition-colors duration-300 flex items-center gap-2"><span className="text-orange-500">→</span> Locations</a></li>
                 <li><a href="#contact" className="hover:text-orange-400 transition-colors duration-300 flex items-center gap-2"><span className="text-orange-500">→</span> Contact us</a></li>
               </ul>

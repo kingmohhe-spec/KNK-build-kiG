@@ -265,3 +265,127 @@ export function loadLocalMainCategoryOverrides(): Record<string, string> {
     return {};
   }
 }
+
+export interface Promotion {
+  id: string;
+  title: string;
+  description: string;
+  image_url: string | null;
+  is_active: boolean;
+  display_order: number;
+}
+
+export async function fetchPromotions(): Promise<Promotion[]> {
+  if (!supabase) return [];
+  try {
+    const { data, error } = await withTimeout(
+      supabase
+        .from('promotions')
+        .select('id, title, description, image_url, is_active, display_order')
+        .eq('is_active', true)
+        .order('display_order', { ascending: true }),
+      8000
+    );
+    if (error || !data) return [];
+    return data as Promotion[];
+  } catch {
+    return [];
+  }
+}
+
+export async function fetchAllPromotions(): Promise<Promotion[]> {
+  if (!supabase) return [];
+  try {
+    const { data, error } = await withTimeout(
+      supabase
+        .from('promotions')
+        .select('id, title, description, image_url, is_active, display_order')
+        .order('display_order', { ascending: true }),
+      8000
+    );
+    if (error || !data) return [];
+    return data as Promotion[];
+  } catch {
+    return [];
+  }
+}
+
+export async function createPromotion(
+  title: string,
+  description: string,
+  imageUrl: string | null,
+  displayOrder: number
+): Promise<Promotion | null> {
+  if (!supabase) return null;
+  try {
+    const { data, error } = await supabase
+      .from('promotions')
+      .insert({
+        title,
+        description,
+        image_url: imageUrl,
+        display_order: displayOrder,
+        is_active: true,
+      })
+      .select('id, title, description, image_url, is_active, display_order')
+      .single();
+    if (error) return null;
+    return data as Promotion;
+  } catch {
+    return null;
+  }
+}
+
+export async function updatePromotion(
+  id: string,
+  updates: Partial<Pick<Promotion, 'title' | 'description' | 'image_url' | 'is_active' | 'display_order'>>
+): Promise<boolean> {
+  if (!supabase) return false;
+  try {
+    const { error } = await supabase
+      .from('promotions')
+      .update({ ...updates, updated_at: new Date().toISOString() })
+      .eq('id', id);
+    return !error;
+  } catch {
+    return false;
+  }
+}
+
+export async function deletePromotion(id: string): Promise<boolean> {
+  if (!supabase) return false;
+  try {
+    const { error } = await supabase
+      .from('promotions')
+      .delete()
+      .eq('id', id);
+    return !error;
+  } catch {
+    return false;
+  }
+}
+
+export async function uploadPromotionImage(file: File): Promise<UploadResult> {
+  if (!supabase) {
+    const dataUrl = await fileToDataUrl(file);
+    return { url: dataUrl, error: null, isLocal: true };
+  }
+  const ext = file.name.split('.').pop()?.toLowerCase() ?? 'jpg';
+  const filePath = `promo-${Date.now()}.${ext}`;
+
+  try {
+    const { error: uploadError } = await supabase.storage
+      .from('product-images')
+      .upload(`promotions/${filePath}`, file, { cacheControl: '3600', upsert: true });
+    if (uploadError) throw uploadError;
+
+    const { data: pub } = supabase.storage.from('product-images').getPublicUrl(`promotions/${filePath}`);
+    const publicUrl = pub.publicUrl;
+
+    return { url: publicUrl, error: null, isLocal: false };
+  } catch (err) {
+    const msg = err instanceof Error ? err.message : 'Upload failed';
+    const dataUrl = await fileToDataUrl(file);
+    return { url: dataUrl, error: msg, isLocal: true };
+  }
+}
