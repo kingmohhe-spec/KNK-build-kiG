@@ -329,12 +329,12 @@ function App() {
             </div>
 
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 max-w-7xl mx-auto">
-              {promotions.map((promo, index) => (
+              {promotions.map((promo) => (
                 <div
                   key={promo.id}
                   className="group relative bg-white rounded-2xl shadow-lg hover:shadow-2xl transition-all duration-500 border border-orange-100 hover:border-orange-300 transform hover:-translate-y-2 overflow-hidden"
                 >
-                  {promo.image_url && (
+                  {promo.image_url && promo.file_type === 'image' && (
                     <div className="h-48 overflow-hidden bg-gray-100 relative">
                       <img
                         src={promo.image_url}
@@ -346,9 +346,33 @@ function App() {
                       </div>
                     </div>
                   )}
+                  {promo.image_url && promo.file_type === 'pdf' && (
+                    <div className="h-48 overflow-hidden bg-gradient-to-br from-red-50 to-orange-50 relative flex items-center justify-center">
+                      <div className="text-center">
+                        <FileText className="h-16 w-16 text-red-400 mx-auto mb-2" />
+                        <span className="text-sm font-semibold text-gray-600">PDF Flyer</span>
+                      </div>
+                      <div className="absolute top-3 left-3 bg-gradient-to-r from-orange-500 to-orange-600 text-white text-xs font-bold px-3 py-1.5 rounded-full shadow-lg flex items-center gap-1">
+                        <Tag className="h-3 w-3" /> Special
+                      </div>
+                    </div>
+                  )}
                   <div className="p-6">
                     <h3 className="text-xl font-bold text-gray-900 mb-2">{promo.title}</h3>
-                    <p className="text-gray-600 leading-relaxed">{promo.description}</p>
+                    {promo.description && (
+                      <p className="text-gray-600 leading-relaxed mb-3">{promo.description}</p>
+                    )}
+                    {promo.image_url && promo.file_type === 'pdf' && (
+                      <a
+                        href={promo.image_url}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="inline-flex items-center gap-2 text-orange-600 font-semibold text-sm hover:text-orange-700 transition-colors"
+                      >
+                        <FileText className="h-4 w-4" />
+                        View PDF Flyer
+                      </a>
+                    )}
                   </div>
                   <div className="absolute top-0 right-0 w-20 h-20 bg-orange-500/10 rounded-full -mr-10 -mt-10 group-hover:scale-150 transition-transform duration-500"></div>
                 </div>

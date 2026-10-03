@@ -2,9 +2,9 @@ import { useState, useEffect } from 'react';
 import { supabase } from '../data/supabaseClient';
 import { categoryDetails } from '../data/categoryDetails';
 import { uploadProductImage, uploadBrandImage, uploadMainCategoryImage, loadLocalImageOverrides, loadLocalBrandOverrides, loadLocalMainCategoryOverrides } from '../data/supabaseClient';
-import { fetchAllPromotions, createPromotion, updatePromotion, deletePromotion, uploadPromotionImage } from '../data/supabaseClient';
+import { fetchAllPromotions, createPromotion, updatePromotion, deletePromotion, uploadPromotionFile } from '../data/supabaseClient';
 import type { UploadResult, Promotion } from '../data/supabaseClient';
-import { Lock, Upload, Check, LogOut, Loader2, Image, Award, Layers, Tag, Trash2, Plus, ToggleLeft, ToggleRight, X } from 'lucide-react';
+import { Lock, Upload, Check, LogOut, Loader2, Image, Award, Layers, Tag, Trash2, Plus, ToggleLeft, ToggleRight, X, FileText } from 'lucide-react';
 
 const ADMIN_PASSWORD = 'BuildBase2025!';
 const SESSION_KEY = 'admin-authed';
@@ -48,7 +48,7 @@ export default function AdminPage() {
 
   const [promotions, setPromotions] = useState<Promotion[]>([]);
   const [promoLoading, setPromoLoading] = useState(false);
-  const [promoForm, setPromoForm] = useState({ title: '', description: '', imageUrl: '' as string | null });
+  const [promoForm, setPromoForm] = useState({ title: '', description: '', fileUrl: '' as string | null, fileType: 'image' as 'image' | 'pdf' });
   const [promoUploading, setPromoUploading] = useState(false);
   const [promoError, setPromoError] = useState('');
   const [promoSuccess, setPromoSuccess] = useState('');
@@ -222,21 +222,22 @@ export default function AdminPage() {
     }
   }
 
-  async function handlePromoImageUpload(file: File) {
+  async function handlePromoFileUpload(file: File) {
     setPromoUploading(true);
     setPromoError('');
+    const isPdf = file.type === 'application/pdf' || file.name.toLowerCase().endsWith('.pdf');
     try {
-      const result = await uploadPromotionImage(file);
+      const result = await uploadPromotionFile(file);
       if (result.url) {
-        setPromoForm((prev) => ({ ...prev, imageUrl: result.url }));
+        setPromoForm((prev) => ({ ...prev, fileUrl: result.url, fileType: isPdf ? 'pdf' : 'image' }));
         if (result.error) {
-          setPromoError(`Image saved locally only: ${result.error}`);
+          setPromoError(`File saved locally only: ${result.error}`);
         }
       } else {
-        setPromoError('Image upload failed. Try again.');
+        setPromoError('File upload failed. Try again.');
       }
     } catch {
-      setPromoError('Image upload failed. Try again.');
+      setPromoError('File upload failed. Try again.');
     } finally {
       setPromoUploading(false);
     }
@@ -258,7 +259,8 @@ export default function AdminPage() {
         const ok = await updatePromotion(editingPromoId, {
           title: promoForm.title.trim(),
           description: promoForm.description.trim(),
-          image_url: promoForm.imageUrl || null,
+          image_url: promoForm.fileUrl || null,
+          file_type: promoForm.fileType,
         });
         if (!ok) {
           setPromoError('Failed to update promotion. Try again.');
@@ -274,7 +276,8 @@ export default function AdminPage() {
         const created = await createPromotion(
           promoForm.title.trim(),
           promoForm.description.trim(),
-          promoForm.imageUrl || null,
+          promoForm.fileUrl || null,
+          promoForm.fileType,
           maxOrder + 1
         );
         if (!created) {
@@ -294,7 +297,7 @@ export default function AdminPage() {
   }
 
   function resetPromoForm() {
-    setPromoForm({ title: '', description: '', imageUrl: null });
+    setPromoForm({ title: '', description: '', fileUrl: null, fileType: 'image' });
     setEditingPromoId(null);
   }
 
@@ -302,7 +305,8 @@ export default function AdminPage() {
     setPromoForm({
       title: promo.title,
       description: promo.description,
-      imageUrl: promo.image_url,
+      fileUrl: promo.image_url,
+      fileType: promo.file_type ?? 'image',
     });
     setEditingPromoId(promo.id);
     setPromoError('');
@@ -589,24 +593,33 @@ export default function AdminPage() {
                   />
                 </div>
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">Description</label>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">Short Description (optional)</label>
                   <textarea
                     value={promoForm.description}
                     onChange={(e) => setPromoForm(prev => ({ ...prev, description: e.target.value }))}
-                    placeholder="Describe the special offer..."
-                    rows={3}
+                    placeholder="A brief note about this special (shown below the flyer)..."
+                    rows={2}
                     className="w-full border border-gray-200 rounded-lg px-4 py-2.5 text-gray-900 focus:outline-none focus:border-orange-400 focus:ring-1 focus:ring-orange-400 resize-none"
-                    required
                   />
                 </div>
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">Promotion Image (optional)</label>
-                  {promoForm.imageUrl && (
-                    <div className="mb-2 relative inline-block">
-                      <img src={promoForm.imageUrl} alt="Preview" className="h-32 rounded-lg border border-gray-200 object-cover" />
+                  <label className="block text-sm font-medium text-gray-700 mb-1">Upload Special Flyer (Photo or PDF)</label>
+                  {promoForm.fileUrl && (
+                    <div className="mb-3 relative inline-block">
+                      {promoForm.fileType === 'pdf' ? (
+                        <div className="flex items-center gap-3 bg-gray-50 border border-gray-200 rounded-lg p-4 pr-8">
+                          <FileText className="h-10 w-10 text-red-500" />
+                          <div>
+                            <p className="text-sm font-medium text-gray-700">PDF document uploaded</p>
+                            <a href={promoForm.fileUrl} target="_blank" rel="noopener noreferrer" className="text-xs text-blue-600 hover:underline">Click to preview</a>
+                          </div>
+                        </div>
+                      ) : (
+                        <img src={promoForm.fileUrl} alt="Preview" className="h-40 rounded-lg border border-gray-200 object-cover" />
+                      )}
                       <button
                         type="button"
-                        onClick={() => setPromoForm(prev => ({ ...prev, imageUrl: null }))}
+                        onClick={() => setPromoForm(prev => ({ ...prev, fileUrl: null }))}
                         className="absolute -top-2 -right-2 bg-red-500 text-white rounded-full p-1 hover:bg-red-600 transition-colors"
                       >
                         <X className="h-3 w-3" />
@@ -617,20 +630,21 @@ export default function AdminPage() {
                     {promoUploading ? (
                       <><Loader2 className="h-4 w-4 animate-spin" /> Uploading...</>
                     ) : (
-                      <><Upload className="h-4 w-4" /> {promoForm.imageUrl ? 'Change image' : 'Upload image'}</>
+                      <><Upload className="h-4 w-4" /> {promoForm.fileUrl ? 'Change file' : 'Upload photo or PDF'}</>
                     )}
                     <input
                       type="file"
-                      accept="image/*"
+                      accept="image/*,application/pdf"
                       className="hidden"
                       disabled={promoUploading}
                       onChange={(e) => {
                         const file = e.target.files?.[0];
-                        if (file) handlePromoImageUpload(file);
+                        if (file) handlePromoFileUpload(file);
                         e.target.value = '';
                       }}
                     />
                   </label>
+                  <p className="text-xs text-gray-400 mt-1">Accepted formats: JPG, PNG, GIF, WebP, or PDF</p>
                 </div>
                 {promoError && <p className="text-sm text-red-500">{promoError}</p>}
                 {promoSuccess && <p className="text-sm text-green-600 flex items-center gap-1"><Check className="h-4 w-4" /> {promoSuccess}</p>}
@@ -660,8 +674,15 @@ export default function AdminPage() {
               {promotions.map((promo) => (
                 <div key={promo.id} className={`bg-white rounded-2xl shadow-md border overflow-hidden ${promo.is_active ? 'border-orange-100' : 'border-gray-200 opacity-60'}`}>
                   {promo.image_url && (
-                    <div className="h-32 overflow-hidden bg-gray-100">
-                      <img src={promo.image_url} alt={promo.title} className="w-full h-full object-cover" />
+                    <div className="h-32 overflow-hidden bg-gray-100 flex items-center justify-center">
+                      {promo.file_type === 'pdf' ? (
+                        <div className="flex items-center gap-2 text-red-500">
+                          <FileText className="h-8 w-8" />
+                          <span className="text-sm font-medium">PDF Flyer</span>
+                        </div>
+                      ) : (
+                        <img src={promo.image_url} alt={promo.title} className="w-full h-full object-cover" />
+                      )}
                     </div>
                   )}
                   <div className="p-4">
@@ -671,7 +692,9 @@ export default function AdminPage() {
                         {promo.is_active ? 'Active' : 'Hidden'}
                       </span>
                     </div>
-                    <p className="text-gray-500 text-xs mb-3 line-clamp-3">{promo.description}</p>
+                    {promo.description && (
+                      <p className="text-gray-500 text-xs mb-3 line-clamp-2">{promo.description}</p>
+                    )}
                     <div className="flex items-center gap-2">
                       <button
                         onClick={() => handleTogglePromo(promo)}

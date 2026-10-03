@@ -271,6 +271,7 @@ export interface Promotion {
   title: string;
   description: string;
   image_url: string | null;
+  file_type: 'image' | 'pdf';
   is_active: boolean;
   display_order: number;
 }
@@ -281,7 +282,7 @@ export async function fetchPromotions(): Promise<Promotion[]> {
     const { data, error } = await withTimeout(
       supabase
         .from('promotions')
-        .select('id, title, description, image_url, is_active, display_order')
+        .select('id, title, description, image_url, file_type, is_active, display_order')
         .eq('is_active', true)
         .order('display_order', { ascending: true }),
       8000
@@ -299,7 +300,7 @@ export async function fetchAllPromotions(): Promise<Promotion[]> {
     const { data, error } = await withTimeout(
       supabase
         .from('promotions')
-        .select('id, title, description, image_url, is_active, display_order')
+        .select('id, title, description, image_url, file_type, is_active, display_order')
         .order('display_order', { ascending: true }),
       8000
     );
@@ -314,6 +315,7 @@ export async function createPromotion(
   title: string,
   description: string,
   imageUrl: string | null,
+  fileType: 'image' | 'pdf',
   displayOrder: number
 ): Promise<Promotion | null> {
   if (!supabase) return null;
@@ -324,10 +326,11 @@ export async function createPromotion(
         title,
         description,
         image_url: imageUrl,
+        file_type: fileType,
         display_order: displayOrder,
         is_active: true,
       })
-      .select('id, title, description, image_url, is_active, display_order')
+      .select('id, title, description, image_url, file_type, is_active, display_order')
       .single();
     if (error) return null;
     return data as Promotion;
@@ -338,7 +341,7 @@ export async function createPromotion(
 
 export async function updatePromotion(
   id: string,
-  updates: Partial<Pick<Promotion, 'title' | 'description' | 'image_url' | 'is_active' | 'display_order'>>
+  updates: Partial<Pick<Promotion, 'title' | 'description' | 'image_url' | 'file_type' | 'is_active' | 'display_order'>>
 ): Promise<boolean> {
   if (!supabase) return false;
   try {
@@ -365,7 +368,7 @@ export async function deletePromotion(id: string): Promise<boolean> {
   }
 }
 
-export async function uploadPromotionImage(file: File): Promise<UploadResult> {
+export async function uploadPromotionFile(file: File): Promise<UploadResult> {
   if (!supabase) {
     const dataUrl = await fileToDataUrl(file);
     return { url: dataUrl, error: null, isLocal: true };
@@ -375,11 +378,11 @@ export async function uploadPromotionImage(file: File): Promise<UploadResult> {
 
   try {
     const { error: uploadError } = await supabase.storage
-      .from('product-images')
-      .upload(`promotions/${filePath}`, file, { cacheControl: '3600', upsert: true });
+      .from('promotion-files')
+      .upload(filePath, file, { cacheControl: '3600', upsert: true });
     if (uploadError) throw uploadError;
 
-    const { data: pub } = supabase.storage.from('product-images').getPublicUrl(`promotions/${filePath}`);
+    const { data: pub } = supabase.storage.from('promotion-files').getPublicUrl(filePath);
     const publicUrl = pub.publicUrl;
 
     return { url: publicUrl, error: null, isLocal: false };
