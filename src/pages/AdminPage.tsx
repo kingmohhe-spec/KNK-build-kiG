@@ -48,7 +48,7 @@ export default function AdminPage() {
 
   const [promotions, setPromotions] = useState<Promotion[]>([]);
   const [promoLoading, setPromoLoading] = useState(false);
-  const [promoForm, setPromoForm] = useState({ title: '', description: '', fileUrl: '' as string | null, fileType: 'image' as 'image' | 'pdf' });
+  const [promoForm, setPromoForm] = useState({ title: '', description: '', imageUrls: [] as string[] });
   const [promoUploading, setPromoUploading] = useState(false);
   const [promoError, setPromoError] = useState('');
   const [promoSuccess, setPromoSuccess] = useState('');
@@ -222,25 +222,28 @@ export default function AdminPage() {
     }
   }
 
-  async function handlePromoFileUpload(file: File) {
+  async function handlePromoImageUpload(file: File) {
     setPromoUploading(true);
     setPromoError('');
-    const isPdf = file.type === 'application/pdf' || file.name.toLowerCase().endsWith('.pdf');
     try {
       const result = await uploadPromotionFile(file);
       if (result.url) {
-        setPromoForm((prev) => ({ ...prev, fileUrl: result.url, fileType: isPdf ? 'pdf' : 'image' }));
+        setPromoForm((prev) => ({ ...prev, imageUrls: [...prev.imageUrls, result.url] }));
         if (result.error) {
-          setPromoError(`File saved locally only: ${result.error}`);
+          setPromoError(`Image saved locally only: ${result.error}`);
         }
       } else {
-        setPromoError('File upload failed. Try again.');
+        setPromoError('Image upload failed. Try again.');
       }
     } catch {
-      setPromoError('File upload failed. Try again.');
+      setPromoError('Image upload failed. Try again.');
     } finally {
       setPromoUploading(false);
     }
+  }
+
+  function handleRemovePromoImage(index: number) {
+    setPromoForm((prev) => ({ ...prev, imageUrls: prev.imageUrls.filter((_, i) => i !== index) }));
   }
 
   async function handlePromoSubmit(e: React.FormEvent) {
@@ -248,8 +251,12 @@ export default function AdminPage() {
     setPromoError('');
     setPromoSuccess('');
 
-    if (!promoForm.title.trim() || !promoForm.description.trim()) {
-      setPromoError('Title and description are required.');
+    if (!promoForm.title.trim()) {
+      setPromoError('Title is required.');
+      return;
+    }
+    if (promoForm.imageUrls.length === 0) {
+      setPromoError('Please upload at least one image.');
       return;
     }
 
@@ -259,8 +266,9 @@ export default function AdminPage() {
         const ok = await updatePromotion(editingPromoId, {
           title: promoForm.title.trim(),
           description: promoForm.description.trim(),
-          image_url: promoForm.fileUrl || null,
-          file_type: promoForm.fileType,
+          image_urls: promoForm.imageUrls,
+          image_url: promoForm.imageUrls[0] ?? null,
+          file_type: 'image',
         });
         if (!ok) {
           setPromoError('Failed to update promotion. Try again.');
@@ -276,8 +284,7 @@ export default function AdminPage() {
         const created = await createPromotion(
           promoForm.title.trim(),
           promoForm.description.trim(),
-          promoForm.fileUrl || null,
-          promoForm.fileType,
+          promoForm.imageUrls,
           maxOrder + 1
         );
         if (!created) {
@@ -297,16 +304,18 @@ export default function AdminPage() {
   }
 
   function resetPromoForm() {
-    setPromoForm({ title: '', description: '', fileUrl: null, fileType: 'image' });
+    setPromoForm({ title: '', description: '', imageUrls: [] });
     setEditingPromoId(null);
   }
 
   function handleEditPromo(promo: Promotion) {
+    const urls = promo.image_urls && promo.image_urls.length > 0
+      ? promo.image_urls
+      : promo.image_url ? [promo.image_url] : [];
     setPromoForm({
       title: promo.title,
       description: promo.description,
-      fileUrl: promo.image_url,
-      fileType: promo.file_type ?? 'image',
+      imageUrls: urls,
     });
     setEditingPromoId(promo.id);
     setPromoError('');
@@ -597,54 +606,57 @@ export default function AdminPage() {
                   <textarea
                     value={promoForm.description}
                     onChange={(e) => setPromoForm(prev => ({ ...prev, description: e.target.value }))}
-                    placeholder="A brief note about this special (shown below the flyer)..."
+                    placeholder="A brief note about this special (shown below the images)..."
                     rows={2}
                     className="w-full border border-gray-200 rounded-lg px-4 py-2.5 text-gray-900 focus:outline-none focus:border-orange-400 focus:ring-1 focus:ring-orange-400 resize-none"
                   />
                 </div>
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">Upload Special Flyer (Photo or PDF)</label>
-                  {promoForm.fileUrl && (
-                    <div className="mb-3 relative inline-block">
-                      {promoForm.fileType === 'pdf' ? (
-                        <div className="flex items-center gap-3 bg-gray-50 border border-gray-200 rounded-lg p-4 pr-8">
-                          <FileText className="h-10 w-10 text-red-500" />
-                          <div>
-                            <p className="text-sm font-medium text-gray-700">PDF document uploaded</p>
-                            <a href={promoForm.fileUrl} target="_blank" rel="noopener noreferrer" className="text-xs text-blue-600 hover:underline">Click to preview</a>
-                          </div>
-                        </div>
-                      ) : (
-                        <img src={promoForm.fileUrl} alt="Preview" className="h-40 rounded-lg border border-gray-200 object-cover" />
-                      )}
-                      <button
-                        type="button"
-                        onClick={() => setPromoForm(prev => ({ ...prev, fileUrl: null }))}
-                        className="absolute -top-2 -right-2 bg-red-500 text-white rounded-full p-1 hover:bg-red-600 transition-colors"
-                      >
-                        <X className="h-3 w-3" />
-                      </button>
-                    </div>
-                  )}
-                  <label className={`flex items-center justify-center gap-2 w-full border border-gray-200 rounded-lg py-2 text-sm font-medium cursor-pointer transition-all ${promoUploading ? 'opacity-50 cursor-wait' : 'hover:border-orange-400 hover:text-orange-600'}`}>
-                    {promoUploading ? (
-                      <><Loader2 className="h-4 w-4 animate-spin" /> Uploading...</>
-                    ) : (
-                      <><Upload className="h-4 w-4" /> {promoForm.fileUrl ? 'Change file' : 'Upload photo or PDF'}</>
+                  <div className="flex items-center justify-between mb-2">
+                    <label className="block text-sm font-medium text-gray-700">Upload Special Images (up to 6)</label>
+                    <span className="text-xs text-gray-500">{promoForm.imageUrls.length} / 6 uploaded</span>
+                  </div>
+                  <div className="grid grid-cols-2 sm:grid-cols-3 gap-3 mb-3">
+                    {promoForm.imageUrls.map((url, index) => (
+                      <div key={index} className="relative group">
+                        <img src={url} alt={`Special ${index + 1}`} className="h-28 w-full rounded-lg border border-gray-200 object-cover" />
+                        <button
+                          type="button"
+                          onClick={() => handleRemovePromoImage(index)}
+                          className="absolute -top-2 -right-2 bg-red-500 text-white rounded-full p-1 hover:bg-red-600 transition-colors shadow-md"
+                        >
+                          <X className="h-3 w-3" />
+                        </button>
+                        {index === 0 && (
+                          <span className="absolute bottom-1 left-1 bg-orange-500 text-white text-xs font-semibold px-1.5 py-0.5 rounded">Main</span>
+                        )}
+                      </div>
+                    ))}
+                    {promoForm.imageUrls.length < 6 && (
+                      <label className={`flex flex-col items-center justify-center h-28 border-2 border-dashed border-gray-300 rounded-lg cursor-pointer transition-all ${promoUploading ? 'opacity-50 cursor-wait' : 'hover:border-orange-400 hover:bg-orange-50'}`}>
+                        {promoUploading ? (
+                          <Loader2 className="h-6 w-6 animate-spin text-orange-500" />
+                        ) : (
+                          <>
+                            <Upload className="h-6 w-6 text-gray-400 mb-1" />
+                            <span className="text-xs text-gray-500">Add image</span>
+                          </>
+                        )}
+                        <input
+                          type="file"
+                          accept="image/*"
+                          className="hidden"
+                          disabled={promoUploading}
+                          onChange={(e) => {
+                            const file = e.target.files?.[0];
+                            if (file) handlePromoImageUpload(file);
+                            e.target.value = '';
+                          }}
+                        />
+                      </label>
                     )}
-                    <input
-                      type="file"
-                      accept="image/*,application/pdf"
-                      className="hidden"
-                      disabled={promoUploading}
-                      onChange={(e) => {
-                        const file = e.target.files?.[0];
-                        if (file) handlePromoFileUpload(file);
-                        e.target.value = '';
-                      }}
-                    />
-                  </label>
-                  <p className="text-xs text-gray-400 mt-1">Accepted formats: JPG, PNG, GIF, WebP, or PDF</p>
+                  </div>
+                  <p className="text-xs text-gray-400">Accepted formats: JPG, PNG, GIF, WebP. Maximum 6 images per promotion.</p>
                 </div>
                 {promoError && <p className="text-sm text-red-500">{promoError}</p>}
                 {promoSuccess && <p className="text-sm text-green-600 flex items-center gap-1"><Check className="h-4 w-4" /> {promoSuccess}</p>}
@@ -671,55 +683,58 @@ export default function AdminPage() {
             )}
 
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
-              {promotions.map((promo) => (
-                <div key={promo.id} className={`bg-white rounded-2xl shadow-md border overflow-hidden ${promo.is_active ? 'border-orange-100' : 'border-gray-200 opacity-60'}`}>
-                  {promo.image_url && (
-                    <div className="h-32 overflow-hidden bg-gray-100 flex items-center justify-center">
-                      {promo.file_type === 'pdf' ? (
-                        <div className="flex items-center gap-2 text-red-500">
-                          <FileText className="h-8 w-8" />
-                          <span className="text-sm font-medium">PDF Flyer</span>
-                        </div>
-                      ) : (
-                        <img src={promo.image_url} alt={promo.title} className="w-full h-full object-cover" />
-                      )}
-                    </div>
-                  )}
-                  <div className="p-4">
-                    <div className="flex items-start justify-between gap-2 mb-2">
-                      <h3 className="font-bold text-gray-900 text-sm">{promo.title}</h3>
-                      <span className={`text-xs font-semibold px-2 py-0.5 rounded-full flex-shrink-0 ${promo.is_active ? 'bg-green-100 text-green-700' : 'bg-gray-200 text-gray-500'}`}>
-                        {promo.is_active ? 'Active' : 'Hidden'}
-                      </span>
-                    </div>
-                    {promo.description && (
-                      <p className="text-gray-500 text-xs mb-3 line-clamp-2">{promo.description}</p>
+              {promotions.map((promo) => {
+                const urls = promo.image_urls && promo.image_urls.length > 0
+                  ? promo.image_urls
+                  : promo.image_url ? [promo.image_url] : [];
+                return (
+                  <div key={promo.id} className={`bg-white rounded-2xl shadow-md border overflow-hidden ${promo.is_active ? 'border-orange-100' : 'border-gray-200 opacity-60'}`}>
+                    {urls.length > 0 && (
+                      <div className="h-32 overflow-hidden bg-gray-100 flex items-center justify-center relative">
+                        <img src={urls[0]} alt={promo.title} className="w-full h-full object-cover" />
+                        {urls.length > 1 && (
+                          <span className="absolute top-2 right-2 bg-black/60 text-white text-xs font-semibold px-2 py-1 rounded-full">
+                            +{urls.length - 1} more
+                          </span>
+                        )}
+                      </div>
                     )}
-                    <div className="flex items-center gap-2">
-                      <button
-                        onClick={() => handleTogglePromo(promo)}
-                        className="flex items-center gap-1 text-xs font-medium text-gray-600 hover:text-orange-600 transition-colors px-2 py-1 rounded hover:bg-orange-50"
-                        title={promo.is_active ? 'Hide promotion' : 'Show promotion'}
-                      >
-                        {promo.is_active ? <ToggleRight className="h-5 w-5 text-green-600" /> : <ToggleLeft className="h-5 w-5" />}
-                        {promo.is_active ? 'Active' : 'Hidden'}
-                      </button>
-                      <button
-                        onClick={() => handleEditPromo(promo)}
-                        className="flex items-center gap-1 text-xs font-medium text-blue-600 hover:text-blue-700 transition-colors px-2 py-1 rounded hover:bg-blue-50"
-                      >
-                        Edit
-                      </button>
-                      <button
-                        onClick={() => handleDeletePromo(promo)}
-                        className="flex items-center gap-1 text-xs font-medium text-red-500 hover:text-red-600 transition-colors px-2 py-1 rounded hover:bg-red-50 ml-auto"
-                      >
-                        <Trash2 className="h-4 w-4" />
-                      </button>
+                    <div className="p-4">
+                      <div className="flex items-start justify-between gap-2 mb-2">
+                        <h3 className="font-bold text-gray-900 text-sm">{promo.title}</h3>
+                        <span className={`text-xs font-semibold px-2 py-0.5 rounded-full flex-shrink-0 ${promo.is_active ? 'bg-green-100 text-green-700' : 'bg-gray-200 text-gray-500'}`}>
+                          {promo.is_active ? 'Active' : 'Hidden'}
+                        </span>
+                      </div>
+                      {promo.description && (
+                        <p className="text-gray-500 text-xs mb-3 line-clamp-2">{promo.description}</p>
+                      )}
+                      <div className="flex items-center gap-2">
+                        <button
+                          onClick={() => handleTogglePromo(promo)}
+                          className="flex items-center gap-1 text-xs font-medium text-gray-600 hover:text-orange-600 transition-colors px-2 py-1 rounded hover:bg-orange-50"
+                          title={promo.is_active ? 'Hide promotion' : 'Show promotion'}
+                        >
+                          {promo.is_active ? <ToggleRight className="h-5 w-5 text-green-600" /> : <ToggleLeft className="h-5 w-5" />}
+                          {promo.is_active ? 'Active' : 'Hidden'}
+                        </button>
+                        <button
+                          onClick={() => handleEditPromo(promo)}
+                          className="flex items-center gap-1 text-xs font-medium text-blue-600 hover:text-blue-700 transition-colors px-2 py-1 rounded hover:bg-blue-50"
+                        >
+                          Edit
+                        </button>
+                        <button
+                          onClick={() => handleDeletePromo(promo)}
+                          className="flex items-center gap-1 text-xs font-medium text-red-500 hover:text-red-600 transition-colors px-2 py-1 rounded hover:bg-red-50 ml-auto"
+                        >
+                          <Trash2 className="h-4 w-4" />
+                        </button>
+                      </div>
                     </div>
                   </div>
-                </div>
-              ))}
+                );
+              })}
             </div>
           </>
         )}

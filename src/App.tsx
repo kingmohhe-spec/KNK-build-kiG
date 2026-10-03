@@ -329,54 +329,65 @@ function App() {
             </div>
 
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 max-w-7xl mx-auto">
-              {promotions.map((promo) => (
-                <div
-                  key={promo.id}
-                  className="group relative bg-white rounded-2xl shadow-lg hover:shadow-2xl transition-all duration-500 border border-orange-100 hover:border-orange-300 transform hover:-translate-y-2 overflow-hidden"
-                >
-                  {promo.image_url && promo.file_type === 'image' && (
-                    <div className="h-48 overflow-hidden bg-gray-100 relative">
-                      <img
-                        src={promo.image_url}
-                        alt={promo.title}
-                        className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-500"
-                      />
-                      <div className="absolute top-3 left-3 bg-gradient-to-r from-orange-500 to-orange-600 text-white text-xs font-bold px-3 py-1.5 rounded-full shadow-lg flex items-center gap-1">
-                        <Tag className="h-3 w-3" /> Special
+              {promotions.map((promo) => {
+                const urls = promo.image_urls && promo.image_urls.length > 0
+                  ? promo.image_urls
+                  : promo.image_url ? [promo.image_url] : [];
+                const mainImg = urls[0] ?? null;
+                return (
+                  <div
+                    key={promo.id}
+                    className="group relative bg-white rounded-2xl shadow-lg hover:shadow-2xl transition-all duration-500 border border-orange-100 hover:border-orange-300 transform hover:-translate-y-2 overflow-hidden"
+                  >
+                    {mainImg && (
+                      <div className="h-48 overflow-hidden bg-gray-100 relative">
+                        <img
+                          src={mainImg}
+                          alt={promo.title}
+                          className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-500"
+                        />
+                        <div className="absolute top-3 left-3 bg-gradient-to-r from-orange-500 to-orange-600 text-white text-xs font-bold px-3 py-1.5 rounded-full shadow-lg flex items-center gap-1">
+                          <Tag className="h-3 w-3" /> Special
+                        </div>
+                        {urls.length > 1 && (
+                          <div className="absolute bottom-2 right-2 flex gap-1">
+                            {urls.slice(1, 4).map((u, i) => (
+                              <img key={i} src={u} alt="" className="h-10 w-10 rounded object-cover border-2 border-white shadow-sm" />
+                            ))}
+                            {urls.length > 4 && (
+                              <span className="h-10 w-10 rounded bg-black/60 text-white text-xs font-semibold flex items-center justify-center border-2 border-white">
+                                +{urls.length - 4}
+                              </span>
+                            )}
+                          </div>
+                        )}
                       </div>
-                    </div>
-                  )}
-                  {promo.image_url && promo.file_type === 'pdf' && (
-                    <div className="h-48 overflow-hidden bg-gradient-to-br from-red-50 to-orange-50 relative flex items-center justify-center">
-                      <div className="text-center">
-                        <FileText className="h-16 w-16 text-red-400 mx-auto mb-2" />
-                        <span className="text-sm font-semibold text-gray-600">PDF Flyer</span>
-                      </div>
-                      <div className="absolute top-3 left-3 bg-gradient-to-r from-orange-500 to-orange-600 text-white text-xs font-bold px-3 py-1.5 rounded-full shadow-lg flex items-center gap-1">
-                        <Tag className="h-3 w-3" /> Special
-                      </div>
-                    </div>
-                  )}
-                  <div className="p-6">
-                    <h3 className="text-xl font-bold text-gray-900 mb-2">{promo.title}</h3>
-                    {promo.description && (
-                      <p className="text-gray-600 leading-relaxed mb-3">{promo.description}</p>
                     )}
-                    {promo.image_url && promo.file_type === 'pdf' && (
-                      <a
-                        href={promo.image_url}
-                        target="_blank"
-                        rel="noopener noreferrer"
-                        className="inline-flex items-center gap-2 text-orange-600 font-semibold text-sm hover:text-orange-700 transition-colors"
-                      >
-                        <FileText className="h-4 w-4" />
-                        View PDF Flyer
-                      </a>
-                    )}
+                    <div className="p-6">
+                      <h3 className="text-xl font-bold text-gray-900 mb-2">{promo.title}</h3>
+                      {promo.description && (
+                        <p className="text-gray-600 leading-relaxed mb-3">{promo.description}</p>
+                      )}
+                      {urls.length > 1 && (
+                        <div className="flex gap-2 mt-3">
+                          {urls.map((url, i) => (
+                            <a
+                              key={i}
+                              href={url}
+                              target="_blank"
+                              rel="noopener noreferrer"
+                              className="block flex-shrink-0"
+                            >
+                              <img src={url} alt={`View ${i + 1}`} className="h-12 w-12 rounded-lg object-cover border border-gray-200 hover:border-orange-400 transition-colors" />
+                            </a>
+                          ))}
+                        </div>
+                      )}
+                    </div>
+                    <div className="absolute top-0 right-0 w-20 h-20 bg-orange-500/10 rounded-full -mr-10 -mt-10 group-hover:scale-150 transition-transform duration-500"></div>
                   </div>
-                  <div className="absolute top-0 right-0 w-20 h-20 bg-orange-500/10 rounded-full -mr-10 -mt-10 group-hover:scale-150 transition-transform duration-500"></div>
-                </div>
-              ))}
+                );
+              })}
             </div>
 
             <div className="text-center mt-10">

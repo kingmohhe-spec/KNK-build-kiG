@@ -272,9 +272,12 @@ export interface Promotion {
   description: string;
   image_url: string | null;
   file_type: 'image' | 'pdf';
+  image_urls: string[] | null;
   is_active: boolean;
   display_order: number;
 }
+
+const PROMO_SELECT = 'id, title, description, image_url, file_type, image_urls, is_active, display_order';
 
 export async function fetchPromotions(): Promise<Promotion[]> {
   if (!supabase) return [];
@@ -282,7 +285,7 @@ export async function fetchPromotions(): Promise<Promotion[]> {
     const { data, error } = await withTimeout(
       supabase
         .from('promotions')
-        .select('id, title, description, image_url, file_type, is_active, display_order')
+        .select(PROMO_SELECT)
         .eq('is_active', true)
         .order('display_order', { ascending: true }),
       8000
@@ -300,7 +303,7 @@ export async function fetchAllPromotions(): Promise<Promotion[]> {
     const { data, error } = await withTimeout(
       supabase
         .from('promotions')
-        .select('id, title, description, image_url, file_type, is_active, display_order')
+        .select(PROMO_SELECT)
         .order('display_order', { ascending: true }),
       8000
     );
@@ -314,8 +317,7 @@ export async function fetchAllPromotions(): Promise<Promotion[]> {
 export async function createPromotion(
   title: string,
   description: string,
-  imageUrl: string | null,
-  fileType: 'image' | 'pdf',
+  imageUrls: string[],
   displayOrder: number
 ): Promise<Promotion | null> {
   if (!supabase) return null;
@@ -325,12 +327,13 @@ export async function createPromotion(
       .insert({
         title,
         description,
-        image_url: imageUrl,
-        file_type: fileType,
+        image_urls: imageUrls.length > 0 ? imageUrls : null,
+        image_url: imageUrls[0] ?? null,
+        file_type: 'image',
         display_order: displayOrder,
         is_active: true,
       })
-      .select('id, title, description, image_url, file_type, is_active, display_order')
+      .select(PROMO_SELECT)
       .single();
     if (error) return null;
     return data as Promotion;
@@ -341,7 +344,7 @@ export async function createPromotion(
 
 export async function updatePromotion(
   id: string,
-  updates: Partial<Pick<Promotion, 'title' | 'description' | 'image_url' | 'file_type' | 'is_active' | 'display_order'>>
+  updates: Partial<Pick<Promotion, 'title' | 'description' | 'image_url' | 'file_type' | 'image_urls' | 'is_active' | 'display_order'>>
 ): Promise<boolean> {
   if (!supabase) return false;
   try {
@@ -374,7 +377,7 @@ export async function uploadPromotionFile(file: File): Promise<UploadResult> {
     return { url: dataUrl, error: null, isLocal: true };
   }
   const ext = file.name.split('.').pop()?.toLowerCase() ?? 'jpg';
-  const filePath = `promo-${Date.now()}.${ext}`;
+  const filePath = `promo-${Date.now()}-${Math.random().toString(36).slice(2, 8)}.${ext}`;
 
   try {
     const { error: uploadError } = await supabase.storage
