@@ -3,8 +3,9 @@ import { supabase } from '../data/supabaseClient';
 import { categoryDetails } from '../data/categoryDetails';
 import { uploadProductImage, uploadBrandImage, uploadMainCategoryImage, loadLocalImageOverrides, loadLocalBrandOverrides, loadLocalMainCategoryOverrides } from '../data/supabaseClient';
 import { fetchAllPromotions, createPromotion, updatePromotion, deletePromotion, uploadPromotionFile } from '../data/supabaseClient';
-import type { UploadResult, Promotion } from '../data/supabaseClient';
-import { Lock, Upload, Check, LogOut, Loader2, Image, Award, Layers, Tag, Trash2, Plus, ToggleLeft, ToggleRight, X, FileText } from 'lucide-react';
+import { fetchAllVacancies, createVacancy, updateVacancy, deleteVacancy, uploadVacancyImage } from '../data/supabaseClient';
+import type { UploadResult, Promotion, Vacancy } from '../data/supabaseClient';
+import { Lock, Upload, Check, LogOut, Loader2, Image, Award, Layers, Tag, Trash2, Plus, ToggleLeft, ToggleRight, X, FileText, Briefcase } from 'lucide-react';
 
 const ADMIN_PASSWORD = 'BuildBase2025!';
 const SESSION_KEY = 'admin-authed';
@@ -39,7 +40,7 @@ export default function AdminPage() {
   const [authError, setAuthError] = useState('');
   const [loading, setLoading] = useState(false);
   const [authed, setAuthed] = useState<boolean>(false);
-  const [tab, setTab] = useState<'products' | 'brands' | 'categories' | 'promotions'>('products');
+  const [tab, setTab] = useState<'products' | 'brands' | 'categories' | 'promotions' | 'vacancies'>('products');
   const [customImages, setCustomImages] = useState<Record<string, string>>({});
   const [brandImages, setBrandImages] = useState<Record<string, string>>({});
   const [mainCategoryImages, setMainCategoryImages] = useState<Record<string, string>>({});
@@ -54,6 +55,14 @@ export default function AdminPage() {
   const [promoSuccess, setPromoSuccess] = useState('');
   const [editingPromoId, setEditingPromoId] = useState<string | null>(null);
 
+  const [vacancies, setVacancies] = useState<Vacancy[]>([]);
+  const [vacLoading, setVacLoading] = useState(false);
+  const [vacForm, setVacForm] = useState({ title: '', description: '', imageUrls: [] as string[] });
+  const [vacUploading, setVacUploading] = useState(false);
+  const [vacError, setVacError] = useState('');
+  const [vacSuccess, setVacSuccess] = useState('');
+  const [editingVacId, setEditingVacId] = useState<string | null>(null);
+
   useEffect(() => {
     setAuthed(sessionStorage.getItem(SESSION_KEY) === '1');
   }, []);
@@ -64,6 +73,7 @@ export default function AdminPage() {
       loadBrandImages();
       loadMainCategoryImages();
       loadPromotions();
+      loadVacancies();
     }
   }, [authed]);
 
@@ -338,6 +348,133 @@ export default function AdminPage() {
     }
   }
 
+  async function loadVacancies() {
+    setVacLoading(true);
+    try {
+      const data = await fetchAllVacancies();
+      setVacancies(data);
+    } catch {
+      setVacancies([]);
+    } finally {
+      setVacLoading(false);
+    }
+  }
+
+  async function handleVacImageUpload(file: File) {
+    setVacUploading(true);
+    setVacError('');
+    try {
+      const result = await uploadVacancyImage(file);
+      if (result.url) {
+        setVacForm((prev) => ({ ...prev, imageUrls: [...prev.imageUrls, result.url] }));
+        if (result.error) {
+          setVacError(`Image saved locally only: ${result.error}`);
+        }
+      } else {
+        setVacError('Image upload failed. Try again.');
+      }
+    } catch {
+      setVacError('Image upload failed. Try again.');
+    } finally {
+      setVacUploading(false);
+    }
+  }
+
+  function handleRemoveVacImage(index: number) {
+    setVacForm((prev) => ({ ...prev, imageUrls: prev.imageUrls.filter((_, i) => i !== index) }));
+  }
+
+  async function handleVacSubmit(e: React.FormEvent) {
+    e.preventDefault();
+    setVacError('');
+    setVacSuccess('');
+
+    if (!vacForm.title.trim()) {
+      setVacError('Title is required.');
+      return;
+    }
+    if (vacForm.imageUrls.length === 0) {
+      setVacError('Please upload at least one image.');
+      return;
+    }
+
+    setVacLoading(true);
+    try {
+      if (editingVacId) {
+        const ok = await updateVacancy(editingVacId, {
+          title: vacForm.title.trim(),
+          description: vacForm.description.trim(),
+          image_urls: vacForm.imageUrls,
+          image_url: vacForm.imageUrls[0] ?? null,
+        });
+        if (!ok) {
+          setVacError('Failed to update vacancy. Try again.');
+        } else {
+          setVacSuccess('Vacancy updated!');
+          resetVacForm();
+          await loadVacancies();
+        }
+      } else {
+        const maxOrder = vacancies.length > 0
+          ? Math.max(...vacancies.map(v => v.display_order))
+          : 0;
+        const created = await createVacancy(
+          vacForm.title.trim(),
+          vacForm.description.trim(),
+          vacForm.imageUrls,
+          maxOrder + 1
+        );
+        if (!created) {
+          setVacError('Failed to create vacancy. Try again.');
+        } else {
+          setVacSuccess('Vacancy added!');
+          resetVacForm();
+          await loadVacancies();
+        }
+      }
+    } catch {
+      setVacError('Something went wrong. Try again.');
+    } finally {
+      setVacLoading(false);
+      setTimeout(() => { setVacSuccess(''); setVacError(''); }, 4000);
+    }
+  }
+
+  function resetVacForm() {
+    setVacForm({ title: '', description: '', imageUrls: [] });
+    setEditingVacId(null);
+  }
+
+  function handleEditVac(vac: Vacancy) {
+    const urls = vac.image_urls && vac.image_urls.length > 0
+      ? vac.image_urls
+      : vac.image_url ? [vac.image_url] : [];
+    setVacForm({
+      title: vac.title,
+      description: vac.description ?? '',
+      imageUrls: urls,
+    });
+    setEditingVacId(vac.id);
+    setVacError('');
+    setVacSuccess('');
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+  }
+
+  async function handleToggleVac(vac: Vacancy) {
+    const ok = await updateVacancy(vac.id, { is_active: !vac.is_active });
+    if (ok) {
+      await loadVacancies();
+    }
+  }
+
+  async function handleDeleteVac(vac: Vacancy) {
+    if (!confirm(`Delete "${vac.title}"? This cannot be undone.`)) return;
+    const ok = await deleteVacancy(vac.id);
+    if (ok) {
+      await loadVacancies();
+    }
+  }
+
   if (!authed) {
     return (
       <div className="min-h-screen bg-gradient-to-br from-slate-950 via-blue-950 to-slate-900 flex items-center justify-center p-4">
@@ -415,6 +552,12 @@ export default function AdminPage() {
             className={`flex items-center gap-2 px-5 py-2.5 rounded-lg font-medium text-sm transition-all ${tab === 'promotions' ? 'bg-orange-500 text-white shadow-md' : 'bg-white text-gray-600 border border-gray-200 hover:border-orange-300'}`}
           >
             <Tag className="h-4 w-4" /> Promotions
+          </button>
+          <button
+            onClick={() => setTab('vacancies')}
+            className={`flex items-center gap-2 px-5 py-2.5 rounded-lg font-medium text-sm transition-all ${tab === 'vacancies' ? 'bg-orange-500 text-white shadow-md' : 'bg-white text-gray-600 border border-gray-200 hover:border-orange-300'}`}
+          >
+            <Briefcase className="h-4 w-4" /> Vacancies
           </button>
         </div>
 
@@ -726,6 +869,172 @@ export default function AdminPage() {
                         </button>
                         <button
                           onClick={() => handleDeletePromo(promo)}
+                          className="flex items-center gap-1 text-xs font-medium text-red-500 hover:text-red-600 transition-colors px-2 py-1 rounded hover:bg-red-50 ml-auto"
+                        >
+                          <Trash2 className="h-4 w-4" />
+                        </button>
+                      </div>
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+          </>
+        )}
+
+        {tab === 'vacancies' && (
+          <>
+            <div className="bg-white rounded-2xl shadow-md border border-gray-100 p-6 mb-8">
+              <div className="flex items-center justify-between mb-4">
+                <h2 className="text-lg font-bold text-gray-900">
+                  {editingVacId ? 'Edit Vacancy' : 'Add New Vacancy'}
+                </h2>
+                {editingVacId && (
+                  <button
+                    onClick={resetVacForm}
+                    className="text-gray-500 hover:text-gray-700 flex items-center gap-1 text-sm"
+                  >
+                    <X className="h-4 w-4" /> Cancel edit
+                  </button>
+                )}
+              </div>
+              <form onSubmit={handleVacSubmit} className="space-y-4">
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">Job Title</label>
+                  <input
+                    type="text"
+                    value={vacForm.title}
+                    onChange={(e) => setVacForm(prev => ({ ...prev, title: e.target.value }))}
+                    placeholder="e.g. Store Assistant - Numbi Branch"
+                    className="w-full border border-gray-200 rounded-lg px-4 py-2.5 text-gray-900 focus:outline-none focus:border-orange-400 focus:ring-1 focus:ring-orange-400"
+                    required
+                  />
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">Short Description (optional)</label>
+                  <textarea
+                    value={vacForm.description}
+                    onChange={(e) => setVacForm(prev => ({ ...prev, description: e.target.value }))}
+                    placeholder="A brief note about this position (shown below the images)..."
+                    rows={2}
+                    className="w-full border border-gray-200 rounded-lg px-4 py-2.5 text-gray-900 focus:outline-none focus:border-orange-400 focus:ring-1 focus:ring-orange-400 resize-none"
+                  />
+                </div>
+                <div>
+                  <div className="flex items-center justify-between mb-2">
+                    <label className="block text-sm font-medium text-gray-700">Upload Vacancy Images (up to 6)</label>
+                    <span className="text-xs text-gray-500">{vacForm.imageUrls.length} / 6 uploaded</span>
+                  </div>
+                  <div className="grid grid-cols-2 sm:grid-cols-3 gap-3 mb-3">
+                    {vacForm.imageUrls.map((url, index) => (
+                      <div key={index} className="relative group">
+                        <img src={url} alt={`Vacancy ${index + 1}`} className="h-28 w-full rounded-lg border border-gray-200 object-cover" />
+                        <button
+                          type="button"
+                          onClick={() => handleRemoveVacImage(index)}
+                          className="absolute -top-2 -right-2 bg-red-500 text-white rounded-full p-1 hover:bg-red-600 transition-colors shadow-md"
+                        >
+                          <X className="h-3 w-3" />
+                        </button>
+                        {index === 0 && (
+                          <span className="absolute bottom-1 left-1 bg-blue-500 text-white text-xs font-semibold px-1.5 py-0.5 rounded">Main</span>
+                        )}
+                      </div>
+                    ))}
+                    {vacForm.imageUrls.length < 6 && (
+                      <label className={`flex flex-col items-center justify-center h-28 border-2 border-dashed border-gray-300 rounded-lg cursor-pointer transition-all ${vacUploading ? 'opacity-50 cursor-wait' : 'hover:border-orange-400 hover:bg-orange-50'}`}>
+                        {vacUploading ? (
+                          <Loader2 className="h-6 w-6 animate-spin text-orange-500" />
+                        ) : (
+                          <>
+                            <Upload className="h-6 w-6 text-gray-400 mb-1" />
+                            <span className="text-xs text-gray-500">Add image</span>
+                          </>
+                        )}
+                        <input
+                          type="file"
+                          accept="image/*"
+                          className="hidden"
+                          disabled={vacUploading}
+                          onChange={(e) => {
+                            const file = e.target.files?.[0];
+                            if (file) handleVacImageUpload(file);
+                            e.target.value = '';
+                          }}
+                        />
+                      </label>
+                    )}
+                  </div>
+                  <p className="text-xs text-gray-400">Accepted formats: JPG, PNG, GIF, WebP. Maximum 6 images per vacancy.</p>
+                </div>
+                {vacError && <p className="text-sm text-red-500">{vacError}</p>}
+                {vacSuccess && <p className="text-sm text-green-600 flex items-center gap-1"><Check className="h-4 w-4" /> {vacSuccess}</p>}
+                <button
+                  type="submit"
+                  disabled={vacLoading}
+                  className="flex items-center gap-2 bg-gradient-to-r from-orange-500 to-orange-600 text-white px-6 py-2.5 rounded-lg font-semibold hover:from-orange-600 hover:to-orange-700 transition-all disabled:opacity-50"
+                >
+                  {vacLoading ? <Loader2 className="h-4 w-4 animate-spin" /> : <Plus className="h-4 w-4" />}
+                  {editingVacId ? 'Update Vacancy' : 'Add Vacancy'}
+                </button>
+              </form>
+            </div>
+
+            <div className="mb-4">
+              <h2 className="text-lg font-bold text-gray-900">Existing Vacancies</h2>
+              <p className="text-sm text-gray-500">Toggle vacancies on or off, edit details, or delete.</p>
+            </div>
+
+            {vacancies.length === 0 && !vacLoading && (
+              <div className="bg-white rounded-2xl shadow-sm border border-gray-100 p-8 text-center text-gray-500">
+                No vacancies yet. Add your first one above.
+              </div>
+            )}
+
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
+              {vacancies.map((vac) => {
+                const urls = vac.image_urls && vac.image_urls.length > 0
+                  ? vac.image_urls
+                  : vac.image_url ? [vac.image_url] : [];
+                return (
+                  <div key={vac.id} className={`bg-white rounded-2xl shadow-md border overflow-hidden ${vac.is_active ? 'border-blue-100' : 'border-gray-200 opacity-60'}`}>
+                    {urls.length > 0 && (
+                      <div className="h-32 overflow-hidden bg-gray-100 flex items-center justify-center relative">
+                        <img src={urls[0]} alt={vac.title} className="w-full h-full object-cover" />
+                        {urls.length > 1 && (
+                          <span className="absolute top-2 right-2 bg-black/60 text-white text-xs font-semibold px-2 py-1 rounded-full">
+                            +{urls.length - 1} more
+                          </span>
+                        )}
+                      </div>
+                    )}
+                    <div className="p-4">
+                      <div className="flex items-start justify-between gap-2 mb-2">
+                        <h3 className="font-bold text-gray-900 text-sm">{vac.title}</h3>
+                        <span className={`text-xs font-semibold px-2 py-0.5 rounded-full flex-shrink-0 ${vac.is_active ? 'bg-green-100 text-green-700' : 'bg-gray-200 text-gray-500'}`}>
+                          {vac.is_active ? 'Active' : 'Hidden'}
+                        </span>
+                      </div>
+                      {vac.description && (
+                        <p className="text-gray-500 text-xs mb-3 line-clamp-2">{vac.description}</p>
+                      )}
+                      <div className="flex items-center gap-2">
+                        <button
+                          onClick={() => handleToggleVac(vac)}
+                          className="flex items-center gap-1 text-xs font-medium text-gray-600 hover:text-orange-600 transition-colors px-2 py-1 rounded hover:bg-orange-50"
+                          title={vac.is_active ? 'Hide vacancy' : 'Show vacancy'}
+                        >
+                          {vac.is_active ? <ToggleRight className="h-5 w-5 text-green-600" /> : <ToggleLeft className="h-5 w-5" />}
+                          {vac.is_active ? 'Active' : 'Hidden'}
+                        </button>
+                        <button
+                          onClick={() => handleEditVac(vac)}
+                          className="flex items-center gap-1 text-xs font-medium text-blue-600 hover:text-blue-700 transition-colors px-2 py-1 rounded hover:bg-blue-50"
+                        >
+                          Edit
+                        </button>
+                        <button
+                          onClick={() => handleDeleteVac(vac)}
                           className="flex items-center gap-1 text-xs font-medium text-red-500 hover:text-red-600 transition-colors px-2 py-1 rounded hover:bg-red-50 ml-auto"
                         >
                           <Trash2 className="h-4 w-4" />

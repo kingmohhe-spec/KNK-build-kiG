@@ -1,12 +1,12 @@
-import { Hammer, Users, MapPin, Phone, Mail, Clock, Award, Shield, TrendingUp, Package, Wrench, ChevronRight, Star, Layers, Lock, Leaf, Send, FileText, ShoppingCart, Tag } from 'lucide-react';
+import { Hammer, Users, MapPin, Phone, Mail, Clock, Award, Shield, TrendingUp, Package, Wrench, ChevronRight, Star, Layers, Lock, Leaf, Send, FileText, ShoppingCart, Tag, Briefcase } from 'lucide-react';
 import { useState, useEffect, useMemo } from 'react';
 import { createClient } from '@supabase/supabase-js';
 import CreditApplicationForm from './components/CreditApplicationForm';
 import CategoryModal from './components/CategoryModal';
 import ParallaxCard from './components/ParallaxCard';
 import { categoryDetails } from './data/categoryDetails';
-import { fetchCustomImages, resolveImage, fetchBrandImages, fetchMainCategoryImages, fetchPromotions } from './data/supabaseClient';
-import type { Promotion } from './data/supabaseClient';
+import { fetchCustomImages, resolveImage, fetchBrandImages, fetchMainCategoryImages, fetchPromotions, fetchVacancies } from './data/supabaseClient';
+import type { Promotion, Vacancy } from './data/supabaseClient';
 
 
 
@@ -27,6 +27,7 @@ function App() {
   const [brandImages, setBrandImages] = useState<Record<string, string>>({});
   const [mainCategoryImages, setMainCategoryImages] = useState<Record<string, string>>({});
   const [promotions, setPromotions] = useState<Promotion[]>([]);
+  const [vacancies, setVacancies] = useState<Vacancy[]>([]);
 
   const supabase = useMemo(() => {
     const url = import.meta.env.VITE_SUPABASE_URL;
@@ -53,6 +54,7 @@ function App() {
     fetchBrandImages().then(setBrandImages);
     fetchMainCategoryImages().then(setMainCategoryImages);
     fetchPromotions().then(setPromotions);
+    fetchVacancies().then(setVacancies);
   }, []);
 
   const handleNewsletterSubmit = async (e: React.FormEvent) => {
@@ -236,6 +238,15 @@ function App() {
                   </span>
                 )}
               </a>
+              <a href="#vacancies" className={`relative transition-colors hover:text-orange-500 ${scrolled ? 'text-gray-700' : 'text-white'} flex items-center gap-1`}>
+                <Briefcase className="h-4 w-4" />
+                Vacancies
+                {vacancies.length > 0 && (
+                  <span className="absolute -top-2 -right-3 bg-gradient-to-r from-blue-500 to-blue-600 text-white text-xs font-bold rounded-full h-5 w-5 flex items-center justify-center">
+                    {vacancies.length}
+                  </span>
+                )}
+              </a>
               <a href="#locations" className={`transition-colors hover:text-blue-600 ${scrolled ? 'text-gray-700' : 'text-white'}`}>Locations</a>
               <button className={`relative transition-colors hover:text-orange-500 ${scrolled ? 'text-gray-700' : 'text-white'}`}>
                 <ShoppingCart className="h-6 w-6" />
@@ -396,6 +407,99 @@ function App() {
                 className="inline-flex items-center gap-2 bg-gradient-to-r from-orange-500 to-orange-600 text-white px-8 py-3 rounded-lg font-semibold hover:from-orange-600 hover:to-orange-700 transition-all transform hover:scale-105 shadow-lg"
               >
                 Enquire about these specials
+                <ChevronRight className="h-5 w-5" />
+              </a>
+            </div>
+          </div>
+        </section>
+      )}
+
+      {vacancies.length > 0 && (
+        <section id="vacancies" className="py-20 bg-gradient-to-br from-blue-50 via-white to-green-50 overflow-hidden">
+          <div className="absolute inset-0 opacity-30" style={{backgroundImage: "radial-gradient(circle, rgba(59,130,246,.08) 1px, transparent 1px)", backgroundSize: "30px 30px"}}></div>
+          <div className="container mx-auto px-6 relative z-10">
+            <div className="text-center mb-12">
+              <div className="inline-block mb-4">
+                <span className="bg-blue-100 text-blue-600 px-4 py-2 rounded-full text-sm font-semibold flex items-center gap-2">
+                  <Briefcase className="h-4 w-4" /> Career Opportunities
+                </span>
+              </div>
+              <h2 className="text-4xl md:text-5xl font-bold text-gray-900 mb-4">
+                Current Vacancies
+              </h2>
+              <p className="text-xl text-gray-600 max-w-2xl mx-auto">
+                Join our team! View our open positions and apply today
+              </p>
+            </div>
+
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 max-w-7xl mx-auto">
+              {vacancies.map((vac) => {
+                const urls = vac.image_urls && vac.image_urls.length > 0
+                  ? vac.image_urls
+                  : vac.image_url ? [vac.image_url] : [];
+                const mainImg = urls[0] ?? null;
+                return (
+                  <div
+                    key={vac.id}
+                    className="group relative bg-white rounded-2xl shadow-lg hover:shadow-2xl transition-all duration-500 border border-blue-100 hover:border-blue-300 transform hover:-translate-y-2 overflow-hidden"
+                  >
+                    {mainImg && (
+                      <div className="h-48 overflow-hidden bg-gray-100 relative">
+                        <img
+                          src={mainImg}
+                          alt={vac.title}
+                          className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-500"
+                        />
+                        <div className="absolute top-3 left-3 bg-gradient-to-r from-blue-500 to-blue-600 text-white text-xs font-bold px-3 py-1.5 rounded-full shadow-lg flex items-center gap-1">
+                          <Briefcase className="h-3 w-3" /> Hiring
+                        </div>
+                        {urls.length > 1 && (
+                          <div className="absolute bottom-2 right-2 flex gap-1">
+                            {urls.slice(1, 4).map((u, i) => (
+                              <img key={i} src={u} alt="" className="h-10 w-10 rounded object-cover border-2 border-white shadow-sm" />
+                            ))}
+                            {urls.length > 4 && (
+                              <span className="h-10 w-10 rounded bg-black/60 text-white text-xs font-semibold flex items-center justify-center border-2 border-white">
+                                +{urls.length - 4}
+                              </span>
+                            )}
+                          </div>
+                        )}
+                      </div>
+                    )}
+                    <div className="p-6">
+                      <h3 className="text-xl font-bold text-gray-900 mb-2">{vac.title}</h3>
+                      {vac.description && (
+                        <p className="text-gray-600 leading-relaxed mb-3">{vac.description}</p>
+                      )}
+                      {urls.length > 1 && (
+                        <div className="flex gap-2 mt-3">
+                          {urls.map((url, i) => (
+                            <a
+                              key={i}
+                              href={url}
+                              target="_blank"
+                              rel="noopener noreferrer"
+                              className="block flex-shrink-0"
+                            >
+                              <img src={url} alt={`View ${i + 1}`} className="h-12 w-12 rounded-lg object-cover border border-gray-200 hover:border-blue-400 transition-colors" />
+                            </a>
+                          ))}
+                        </div>
+                      )}
+                    </div>
+                    <div className="absolute top-0 right-0 w-20 h-20 bg-blue-500/10 rounded-full -mr-10 -mt-10 group-hover:scale-150 transition-transform duration-500"></div>
+                  </div>
+                );
+              })}
+            </div>
+
+            <div className="text-center mt-10">
+              <a
+                href="#contact"
+                className="inline-flex items-center gap-2 bg-gradient-to-r from-blue-500 to-blue-600 text-white px-8 py-3 rounded-lg font-semibold hover:from-blue-600 hover:to-blue-700 transition-all transform hover:scale-105 shadow-lg"
+              >
+                Apply or enquire about a position
                 <ChevronRight className="h-5 w-5" />
               </a>
             </div>

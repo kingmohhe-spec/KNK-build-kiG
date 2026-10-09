@@ -395,3 +395,133 @@ export async function uploadPromotionFile(file: File): Promise<UploadResult> {
     return { url: dataUrl, error: msg, isLocal: true };
   }
 }
+
+/* ── Vacancies ── */
+
+export interface Vacancy {
+  id: string;
+  title: string;
+  description: string | null;
+  image_url: string | null;
+  image_urls: string[] | null;
+  is_active: boolean;
+  display_order: number;
+}
+
+const VACANCY_SELECT = 'id, title, description, image_url, image_urls, is_active, display_order';
+
+export async function fetchVacancies(): Promise<Vacancy[]> {
+  if (!supabase) return [];
+  try {
+    const { data, error } = await withTimeout(
+      supabase
+        .from('vacancies')
+        .select(VACANCY_SELECT)
+        .eq('is_active', true)
+        .order('display_order', { ascending: true }),
+      8000
+    );
+    if (error || !data) return [];
+    return data as Vacancy[];
+  } catch {
+    return [];
+  }
+}
+
+export async function fetchAllVacancies(): Promise<Vacancy[]> {
+  if (!supabase) return [];
+  try {
+    const { data, error } = await withTimeout(
+      supabase
+        .from('vacancies')
+        .select(VACANCY_SELECT)
+        .order('display_order', { ascending: true }),
+      8000
+    );
+    if (error || !data) return [];
+    return data as Vacancy[];
+  } catch {
+    return [];
+  }
+}
+
+export async function createVacancy(
+  title: string,
+  description: string,
+  imageUrls: string[],
+  displayOrder: number
+): Promise<Vacancy | null> {
+  if (!supabase) return null;
+  try {
+    const { data, error } = await supabase
+      .from('vacancies')
+      .insert({
+        title,
+        description,
+        image_urls: imageUrls.length > 0 ? imageUrls : null,
+        image_url: imageUrls[0] ?? null,
+        display_order: displayOrder,
+        is_active: true,
+      })
+      .select(VACANCY_SELECT)
+      .single();
+    if (error) return null;
+    return data as Vacancy;
+  } catch {
+    return null;
+  }
+}
+
+export async function updateVacancy(
+  id: string,
+  updates: Partial<Pick<Vacancy, 'title' | 'description' | 'image_url' | 'image_urls' | 'is_active' | 'display_order'>>
+): Promise<boolean> {
+  if (!supabase) return false;
+  try {
+    const { error } = await supabase
+      .from('vacancies')
+      .update({ ...updates, updated_at: new Date().toISOString() })
+      .eq('id', id);
+    return !error;
+  } catch {
+    return false;
+  }
+}
+
+export async function deleteVacancy(id: string): Promise<boolean> {
+  if (!supabase) return false;
+  try {
+    const { error } = await supabase
+      .from('vacancies')
+      .delete()
+      .eq('id', id);
+    return !error;
+  } catch {
+    return false;
+  }
+}
+
+export async function uploadVacancyImage(file: File): Promise<UploadResult> {
+  if (!supabase) {
+    const dataUrl = await fileToDataUrl(file);
+    return { url: dataUrl, error: null, isLocal: true };
+  }
+  const ext = file.name.split('.').pop()?.toLowerCase() ?? 'jpg';
+  const filePath = `vacancy-${Date.now()}-${Math.random().toString(36).slice(2, 8)}.${ext}`;
+
+  try {
+    const { error: uploadError } = await supabase.storage
+      .from('vacancy-files')
+      .upload(filePath, file, { cacheControl: '3600', upsert: true });
+    if (uploadError) throw uploadError;
+
+    const { data: pub } = supabase.storage.from('vacancy-files').getPublicUrl(filePath);
+    const publicUrl = pub.publicUrl;
+
+    return { url: publicUrl, error: null, isLocal: false };
+  } catch (err) {
+    const msg = err instanceof Error ? err.message : 'Upload failed';
+    const dataUrl = await fileToDataUrl(file);
+    return { url: dataUrl, error: msg, isLocal: true };
+  }
+}
