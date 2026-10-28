@@ -4,6 +4,7 @@ import { createClient } from '@supabase/supabase-js';
 import CreditApplicationForm from './components/CreditApplicationForm';
 import CategoryModal from './components/CategoryModal';
 import ParallaxCard from './components/ParallaxCard';
+import VacancyModal from './components/VacancyModal';
 import { categoryDetails } from './data/categoryDetails';
 import { fetchCustomImages, resolveImage, fetchBrandImages, fetchMainCategoryImages, fetchPromotions, fetchVacancies } from './data/supabaseClient';
 import type { Promotion, Vacancy } from './data/supabaseClient';
@@ -28,6 +29,7 @@ function App() {
   const [mainCategoryImages, setMainCategoryImages] = useState<Record<string, string>>({});
   const [promotions, setPromotions] = useState<Promotion[]>([]);
   const [vacancies, setVacancies] = useState<Vacancy[]>([]);
+  const [selectedVacancy, setSelectedVacancy] = useState<Vacancy | null>(null);
 
   const supabase = useMemo(() => {
     const url = import.meta.env.VITE_SUPABASE_URL;
@@ -441,7 +443,16 @@ function App() {
                 return (
                   <div
                     key={vac.id}
-                    className="group relative bg-white rounded-2xl shadow-lg hover:shadow-2xl transition-all duration-500 border border-blue-100 hover:border-blue-300 transform hover:-translate-y-2 overflow-hidden"
+                    role="button"
+                    tabIndex={0}
+                    onClick={() => setSelectedVacancy(vac)}
+                    onKeyDown={(e) => {
+                      if (e.key === 'Enter' || e.key === ' ') {
+                        e.preventDefault();
+                        setSelectedVacancy(vac);
+                      }
+                    }}
+                    className="group relative bg-white rounded-2xl shadow-lg hover:shadow-2xl transition-all duration-500 border border-blue-100 hover:border-blue-300 transform hover:-translate-y-2 overflow-hidden cursor-pointer focus:outline-none focus-visible:ring-2 focus-visible:ring-blue-500"
                   >
                     {mainImg && (
                       <div className="h-48 overflow-hidden bg-gray-100 relative">
@@ -470,23 +481,11 @@ function App() {
                     <div className="p-6">
                       <h3 className="text-xl font-bold text-gray-900 mb-2">{vac.title}</h3>
                       {vac.description && (
-                        <p className="text-gray-600 leading-relaxed mb-3">{vac.description}</p>
+                        <p className="text-gray-600 leading-relaxed mb-3 line-clamp-3 whitespace-pre-line">{vac.description}</p>
                       )}
-                      {urls.length > 1 && (
-                        <div className="flex gap-2 mt-3">
-                          {urls.map((url, i) => (
-                            <a
-                              key={i}
-                              href={url}
-                              target="_blank"
-                              rel="noopener noreferrer"
-                              className="block flex-shrink-0"
-                            >
-                              <img src={url} alt={`View ${i + 1}`} className="h-12 w-12 rounded-lg object-cover border border-gray-200 hover:border-blue-400 transition-colors" />
-                            </a>
-                          ))}
-                        </div>
-                      )}
+                      <span className="inline-flex items-center gap-1 text-sm font-semibold text-blue-600 group-hover:text-blue-700 mt-2">
+                        View full post <ChevronRight className="h-4 w-4 transition-transform group-hover:translate-x-1" />
+                      </span>
                     </div>
                     <div className="absolute top-0 right-0 w-20 h-20 bg-blue-500/10 rounded-full -mr-10 -mt-10 group-hover:scale-150 transition-transform duration-500"></div>
                   </div>
@@ -1046,6 +1045,10 @@ We believe in more than just supplying materials. Our team is built on years of 
       </footer>
 
       <CreditApplicationForm isOpen={creditFormOpen} onClose={() => setCreditFormOpen(false)} />
+      {selectedVacancy && (
+        <VacancyModal vacancy={selectedVacancy} onClose={() => setSelectedVacancy(null)} />
+      )}
+
       {selectedCategory && (
         <CategoryModal
           categoryName={selectedCategory}
