@@ -396,6 +396,36 @@ export async function uploadPromotionFile(file: File): Promise<UploadResult> {
   }
 }
 
+/* ── Branch Hours ── */
+
+export interface BranchHourRow {
+  branch_name: string;
+  day_of_week: string;
+  opening_time: string;
+  closing_time: string;
+}
+
+export type BranchHoursMap = Record<string, Record<string, { open: string; close: string }>>;
+
+export async function fetchBranchHours(): Promise<BranchHoursMap> {
+  if (!supabase) return {};
+  try {
+    const { data, error } = await withTimeout(
+      supabase.from('branch_hours').select('branch_name, day_of_week, opening_time, closing_time'),
+      8000
+    );
+    if (error || !data) return {};
+    const map: BranchHoursMap = {};
+    for (const row of data as BranchHourRow[]) {
+      if (!map[row.branch_name]) map[row.branch_name] = {};
+      map[row.branch_name][row.day_of_week] = { open: row.opening_time, close: row.closing_time };
+    }
+    return map;
+  } catch {
+    return {};
+  }
+}
+
 /* ── Vacancies ── */
 
 export interface Vacancy {

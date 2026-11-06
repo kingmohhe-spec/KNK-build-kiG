@@ -6,8 +6,8 @@ import CategoryModal from './components/CategoryModal';
 import ParallaxCard from './components/ParallaxCard';
 import VacancyModal from './components/VacancyModal';
 import { categoryDetails } from './data/categoryDetails';
-import { fetchCustomImages, resolveImage, fetchBrandImages, fetchMainCategoryImages, fetchPromotions, fetchVacancies } from './data/supabaseClient';
-import type { Promotion, Vacancy } from './data/supabaseClient';
+import { fetchCustomImages, resolveImage, fetchBrandImages, fetchMainCategoryImages, fetchPromotions, fetchVacancies, fetchBranchHours } from './data/supabaseClient';
+import type { Promotion, Vacancy, BranchHoursMap } from './data/supabaseClient';
 
 
 
@@ -30,6 +30,7 @@ function App() {
   const [promotions, setPromotions] = useState<Promotion[]>([]);
   const [vacancies, setVacancies] = useState<Vacancy[]>([]);
   const [selectedVacancy, setSelectedVacancy] = useState<Vacancy | null>(null);
+  const [branchHours, setBranchHours] = useState<BranchHoursMap>({});
 
   const supabase = useMemo(() => {
     const url = import.meta.env.VITE_SUPABASE_URL;
@@ -57,6 +58,7 @@ function App() {
     fetchMainCategoryImages().then(setMainCategoryImages);
     fetchPromotions().then(setPromotions);
     fetchVacancies().then(setVacancies);
+    fetchBranchHours().then(setBranchHours);
   }, []);
 
   const handleNewsletterSubmit = async (e: React.FormEvent) => {
@@ -710,16 +712,42 @@ We believe in more than just supplying materials. Our team is built on years of 
                     )}
                   </div>
                   <p className="text-orange-600 font-semibold mb-6">{branch.region}</p>
-                  <div className="space-y-3">
-                    <div className="flex items-center text-gray-600 text-sm group-hover:text-gray-800 transition-colors">
-                      <Clock className="h-4 w-4 mr-3 text-orange-500" />
-                      <span>Mon - Fri: 7:00 AM - 5:00 PM</span>
-                    </div>
-                    <div className="flex items-center text-gray-600 text-sm group-hover:text-gray-800 transition-colors">
-                      <Clock className="h-4 w-4 mr-3 text-orange-500" />
-                      <span>Sat: 7:00 AM - 1:00 PM</span>
-                    </div>
-                  </div>
+                  {(() => {
+                    const hours = branchHours[branch.name];
+                    const formatTime = (t?: string) => {
+                      if (!t) return '';
+                      const [h, m] = t.split(':');
+                      const hr = parseInt(h, 10);
+                      const suffix = hr >= 12 ? 'PM' : 'AM';
+                      const displayHr = hr > 12 ? hr - 12 : hr === 0 ? 12 : hr;
+                      return `${displayHr}:${m} ${suffix}`;
+                    };
+                    const mf = hours && hours['Monday'];
+                    const sat = hours && hours['Saturday'];
+                    const sun = hours && hours['Sunday'];
+                    return (
+                      <div className="space-y-3">
+                        {mf && (
+                          <div className="flex items-center text-gray-600 text-sm group-hover:text-gray-800 transition-colors">
+                            <Clock className="h-4 w-4 mr-3 text-orange-500" />
+                            <span>Mon - Fri: {formatTime(mf.open)} - {formatTime(mf.close)}</span>
+                          </div>
+                        )}
+                        {sat && (
+                          <div className="flex items-center text-gray-600 text-sm group-hover:text-gray-800 transition-colors">
+                            <Clock className="h-4 w-4 mr-3 text-orange-500" />
+                            <span>Sat: {formatTime(sat.open)} - {formatTime(sat.close)}</span>
+                          </div>
+                        )}
+                        {sun && (
+                          <div className="flex items-center text-gray-600 text-sm group-hover:text-gray-800 transition-colors">
+                            <Clock className="h-4 w-4 mr-3 text-orange-500" />
+                            <span>Sun: {formatTime(sun.open)} - {formatTime(sun.close)}</span>
+                          </div>
+                        )}
+                      </div>
+                    );
+                  })()}
                 </div>
               </div>
             ))}
